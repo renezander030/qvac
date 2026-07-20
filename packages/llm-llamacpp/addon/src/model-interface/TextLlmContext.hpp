@@ -375,8 +375,9 @@ private:
   // close marker is legitimate and must not be overridden.
   bool banEogAfterReasoningRecovery_ = false;
 
-  // All EOG token ids of the loaded vocab, computed lazily on the first
-  // recovery so the pre-sampling ban is one pass over a short list.
+  // All EOG token ids of the loaded vocab, precomputed once in
+  // initializeCommonState() (Qwen3 family only) so the recovery ban is one
+  // pass over a short list with no mid-stream O(nVocab) scan.
   std::vector<llama_token> eogTokens_;
 
   // GPT-OSS Harmony: <|call|> is a frame delimiter, not a stop signal

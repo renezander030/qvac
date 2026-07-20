@@ -123,6 +123,22 @@ void TextLlmContext::initializeCommonState() {
         qvac_lib_inference_addon_llama::utils::
             isQwen3ReasoningFamilyArchitecture(arch.value());
   }
+
+  // Precompute the EOG token id set used by the EOS-inside-reasoning recovery
+  // (see `banEogAfterReasoningRecovery_`). Only the Qwen3 family arms that
+  // ban, so the scan is gated on it. Computed once here so the recovery path
+  // never does an O(nVocab) scan mid-stream, matching this file's
+  // compute-once-at-load convention. Valid for the instance lifetime because
+  // `modelCtx_` (copy/move deleted) is never reassigned.
+  if (isQwen3ReasoningFamily_) {
+    const int32_t nVocab = llama_vocab_n_tokens(modelCtx_.vocab);
+    eogTokens_.reserve(8);
+    for (llama_token t = 0; t < nVocab; ++t) {
+      if (llama_vocab_is_eog(modelCtx_.vocab, t)) {
+        eogTokens_.push_back(t);
+      }
+    }
+  }
   isHarmonyModel_ =
       qvac_lib_inference_addon_llama::utils::isHarmonyModel(modelCtx_.model);
   if (isHarmonyModel_) {
@@ -920,14 +936,7 @@ SequenceStepResult TextLlmContext::onLogitsReady(
               static_cast<unsigned>(params_.n_predict)) {
         float* logits = llama_get_logits_ith(modelCtx_.lctx, logitIdx);
         if (logits != nullptr) {
-          if (eogTokens_.empty()) {
-            const int32_t nVocab = llama_vocab_n_tokens(modelCtx_.vocab);
-            for (llama_token t = 0; t < nVocab; ++t) {
-              if (llama_vocab_is_eog(modelCtx_.vocab, t)) {
-                eogTokens_.push_back(t);
-              }
-            }
-          }
+          // `eogTokens_` is precomputed in initializeCommonState().
           for (const llama_token t : eogTokens_) {
             logits[t] = -INFINITY;
           }
