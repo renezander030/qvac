@@ -184,7 +184,10 @@ safeTest(
 
     // Second completion - this is where the fix should activate
     const messages2 = createFollowUpMessages(messages1, response1)
-    const { response: response2, stats: stats2 } = await runCompletionWithStats(inference, messages2)
+    const { response: response2, stats: stats2 } = await runCompletionWithStats(
+      inference,
+      messages2
+    )
     t.comment(`Second completion (tools=false, len=${response2.length}):\n${response2}`)
 
     verifyReasoningTags(t, response2, 'Second completion')
@@ -215,7 +218,10 @@ safeTest(
 
     // Second completion - this is where the fix should activate
     const messages2 = createFollowUpMessages(messages1, response1)
-    const { response: response2, stats: stats2 } = await runCompletionWithStats(inference, messages2)
+    const { response: response2, stats: stats2 } = await runCompletionWithStats(
+      inference,
+      messages2
+    )
     t.comment(`Second completion (tools=true, len=${response2.length}):\n${response2}`)
 
     verifyReasoningTags(t, response2, 'Second completion (tools=true)')
