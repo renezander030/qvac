@@ -51,8 +51,7 @@ async function main(): Promise<void> {
         config: {
           ctx_size: config.ctxSize,
           reasoning_budget: config.reasoningBudget,
-          tools: config.tools,
-          toolsMode: 'static'
+          tools: config.tools
         },
         default: true
       }

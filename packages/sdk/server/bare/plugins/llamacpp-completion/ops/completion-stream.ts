@@ -9,7 +9,6 @@ import type {
   ToolCall,
   ToolDialect
 } from '@/schemas'
-import { TOOLS_MODE } from '@/schemas/tools'
 import {
   logCacheDisabled,
   logCacheInit,
@@ -29,11 +28,7 @@ import {
   type TurnHandle
 } from '@/server/bare/plugins/llamacpp-completion/ops/kv-cache-session'
 import type { DisposableScope } from '@/server/bare/runtime/disposable-scope'
-import {
-  appendToolsToHistory,
-  detectToolDialect,
-  prependToolsToHistory
-} from '@/server/utils/tool-integration'
+import { detectToolDialect, prependToolsToHistory } from '@/server/utils/tool-integration'
 import { parseToolCalls } from '@/server/utils/tools'
 import { getResponseFormatJsonSchema } from '@/server/utils/response-format'
 import { buildAutoCacheSaveHistory, type CacheMessage } from '@/server/utils'
@@ -208,7 +203,6 @@ type HistoryMsg = {
 /**
  * Pick the messages that need to reach the model for the next turn.
  *
- * Static mode (no `tools` argument):
  *   - Cache miss: send the whole history minus the system message (which
  *     was primed during cache init).
  *   - Cache hit with a recorded `savedCount`: send only the unsaved tail
@@ -218,81 +212,38 @@ type HistoryMsg = {
  *   - Cache hit with a stale/missing `savedCount`: fall back to the full
  *     non-system history. The session is told (`dropStaleSavedCount`) so
  *     the bad boundary doesn't propagate into the next turn.
- *
- * Dynamic mode (`tools` argument set):
- *   - The addon anchors the tool block after the last user message and
- *     trims tools + the assistant's tool-call output from the cache once
- *     the chain resolves. After that trim, the cache only holds messages
- *     up to the last user turn, so the SDK has to ship the right slice
- *     plus the (possibly new) tool set:
- *       * tool-chain continuation (last role is "tool"): send the trailing
- *         consecutive tool messages, no tool block — tools are still
- *         anchored in the cache from the previous round.
- *       * new user turn after a chain (prev role is "assistant"): send
- *         [assistant, user] so the model sees its own final reply before
- *         the new prompt, then re-anchor the tool block.
- *       * otherwise: send just the last message + tool block.
  */
 function prepareMessagesForCache(
   session: KvCacheSession,
   turn: TurnHandle,
   cacheExists: boolean,
-  history: HistoryMsg[],
-  tools?: Tool[]
+  history: HistoryMsg[]
 ): ChatHistory[] {
-  const addTools = tools?.length ? transformMessages(tools) : []
-  const dynamic = addTools.length > 0
-
   if (!(cacheExists && history.length > 0)) {
     const historyWithoutSystem = history.filter((msg) => msg.role !== 'system')
-    return [...transformMessages(historyWithoutSystem), ...addTools]
+    return transformMessages(historyWithoutSystem)
   }
 
-  if (!dynamic) {
-    // Static path — slice from the turn's `savedCount` so callers can
-    // stage multiple messages between completions. `decideCachedHistorySlice`
-    // also guards against the QVAC-17780 stale-count regression: if the
-    // saved boundary would slice the history down to an empty payload
-    // (e.g. after a cancelled mid-decode), it falls back to the full
-    // non-system history and signals the caller to drop the bad entry.
-    // The session owns the entry; `dropStaleSavedCount` clears it
-    // without touching the on-disk file (the file is still trustworthy
-    // — only the boundary count is wrong).
-    const { messages, clearStaleCount } = decideCachedHistorySlice(
-      turn.savedCount,
-      cacheExists,
-      history
-    )
+  // Slice from the turn's `savedCount` so callers can
+  // stage multiple messages between completions. `decideCachedHistorySlice`
+  // also guards against the QVAC-17780 stale-count regression: if the
+  // saved boundary would slice the history down to an empty payload
+  // (e.g. after a cancelled mid-decode), it falls back to the full
+  // non-system history and signals the caller to drop the bad entry.
+  // The session owns the entry; `dropStaleSavedCount` clears it
+  // without touching the on-disk file (the file is still trustworthy
+  // — only the boundary count is wrong).
+  const { messages, clearStaleCount } = decideCachedHistorySlice(
+    turn.savedCount,
+    cacheExists,
+    history
+  )
 
-    if (clearStaleCount) {
-      session.dropStaleSavedCount(turn)
-    }
-
-    return transformMessages(messages)
+  if (clearStaleCount) {
+    session.dropStaleSavedCount(turn)
   }
 
-  // Dynamic path. The addon trimmed tools after the previous round, so the
-  // cache no longer holds the saved-count we'd rely on for slicing — pick
-  // the right fragment based on the role of the last history message.
-  const lastMsg = history[history.length - 1]!
-
-  if (lastMsg.role === 'tool') {
-    const trailingTools: HistoryMsg[] = []
-    for (let i = history.length - 1; i >= 0; i--) {
-      const msg = history[i]!
-      if (msg.role !== 'tool') break
-      trailingTools.unshift(msg)
-    }
-    return transformMessages(trailingTools)
-  }
-
-  if (lastMsg.role === 'user') {
-    const prevMsg = history[history.length - 2]
-    const tail = prevMsg?.role === 'assistant' ? [prevMsg, lastMsg] : [lastMsg]
-    return [...transformMessages(tail), ...addTools]
-  }
-
-  return [...transformMessages([lastMsg]), ...addTools]
+  return transformMessages(messages)
 }
 
 type CacheRunOptions = Pick<RunOptions, 'cacheKey' | 'saveCacheToDisk'>
@@ -377,9 +328,7 @@ export async function* completion(
 
   const modelConfig = getModelConfig(modelId)
   const toolsEnabled = (modelConfig as { tools?: boolean }).tools === true
-  const toolsMode = (modelConfig as { toolsMode?: string }).toolsMode
-  const dynamicTools = !!tools?.length && toolsEnabled && toolsMode === TOOLS_MODE.dynamic
-  const staticTools = !!tools?.length && toolsEnabled && !dynamicTools
+  const includeTools = !!tools?.length && toolsEnabled
 
   const dialect =
     tools && tools.length > 0 ? (params.toolDialect ?? detectToolDialect(modelId)) : undefined
@@ -447,10 +396,8 @@ export async function* completion(
   if (!kvCache) {
     // KV-cache disabled — straight passthrough, no session involvement.
     let historyWithTools: Array<HistoryMsg | Tool> = history
-    if (staticTools && tools) {
+    if (includeTools && tools) {
       historyWithTools = prependToolsToHistory(history, tools)
-    } else if (dynamicTools && tools) {
-      historyWithTools = appendToolsToHistory(history, tools)
     }
 
     const transformedHistory = transformMessages(historyWithTools)
@@ -475,10 +422,7 @@ export async function* completion(
 
   const session = createKvCacheSession(modelId, { logger: requestLogger })
   const systemPromptFromHistory = extractSystemPrompt(history)
-  // Dynamic mode lets each turn carry its own tool set, so the cache
-  // hash must not depend on the tool list — otherwise a tool change
-  // would force a fresh cache file and defeat the whole optimisation.
-  const configHash = generateConfigHash(systemPromptFromHistory, dynamicTools ? undefined : tools)
+  const configHash = generateConfigHash(systemPromptFromHistory, tools)
 
   const systemPromptToUse =
     systemPromptFromHistory ||
@@ -491,10 +435,9 @@ export async function* completion(
       cachePath,
       systemPromptToUse,
       typeof kvCache === 'string' ? kvCache : 'auto',
-      // Static-mode tools are baked into the system-prompt cache so
-      // they're shared across the session. Dynamic-mode tools belong
-      // to a per-turn anchor and must not enter the system cache.
-      staticTools ? tools : undefined
+      // Tools are baked into the system-prompt cache so they're shared
+      // across the session.
+      includeTools ? tools : undefined
     )
   }
 
@@ -530,13 +473,7 @@ export async function* completion(
   // `cacheExists` is implied by `beginTurn` — the session either found
   // an existing cache or just primed one. Pass `true` to the message
   // selector so the slicing branches engage.
-  const messagesToSend = prepareMessagesForCache(
-    session,
-    turn,
-    /* cacheExists */ true,
-    history,
-    dynamicTools ? tools : undefined
-  )
+  const messagesToSend = prepareMessagesForCache(session, turn, /* cacheExists */ true, history)
   logMessagesToAddon(messagesToSend, 'PROMPT_SEND')
 
   const result = yield* processModelResponse(
