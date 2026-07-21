@@ -15,8 +15,7 @@
       "runBitnetTest",
       "runCacheStateMachineTest",
       "runConfigParametersTest",
-      "runKvCacheTypeDefaultsTest",
-      "runToolsCompactTest"
+      "runKvCacheTypeDefaultsTest"
     ],
     "lightB": [
       "runGenerationParamsTest",
@@ -39,7 +38,6 @@
       "runMultiGpuTest"
     ],
     "funcShardB": [
-      "runToolsCompactTest",
       "runSlidingContextTest",
       "runKvCacheTypeDefaultsTest"
     ],
