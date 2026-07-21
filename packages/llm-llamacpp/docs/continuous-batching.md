@@ -226,7 +226,7 @@ Lifecycle methods in call order:
 | `onPrefillComplete` | When prefill finishes | Records `nPast`, triggers context-shift check |
 | `onLogitsReady` | Each generation step | Samples next token, runs antiprompt/stop checks |
 | `onGenerationFinished` | Natural EOG | Flushes UTF-8 buffer |
-| `onCancel` | User cancel or decode error | Same policy as above; called before KV clear |
+| `onCancel` | User cancel or decode error | Flushes UTF-8 buffer; called before KV clear |
 | `onSequenceEnd` | Every terminal path | Flushes remaining UTF-8 buffer |
 | `saveCache` | After KV clear | Persists KV cache to disk if `saveCacheToDisk` is set |
 
