@@ -1,8 +1,8 @@
 ## 1. De-risk the navigation assumption
 
-- [ ] 1.1 Capture the pre-move URL set from the current build (every page URL plus the generated surfaces that list them) into a fixture the redirect check will replay later
-- [ ] 1.2 Spike `tabMode="navbar"` on the existing notebook `DocsLayout` by temporarily wrapping the current tree's top level in one `root: true` folder, and confirm it renders as a second header row alongside `nav.mode: 'top'`
-- [ ] 1.3 If the spike does not produce two rows, record the fallback decision in `design.md` before continuing
+- [x] 1.1 Capture the pre-move URL set from the current build (every page URL plus the generated surfaces that list them) into a fixture the redirect check will replay later
+- [x] 1.2 Spike `tabMode="navbar"` on the existing notebook `DocsLayout` by temporarily wrapping the current tree's top level in one `root: true` folder, and confirm it renders as a second header row alongside `nav.mode: 'top'`
+- [x] 1.3 If the spike does not produce two rows, record the fallback decision in `design.md` before continuing
 
 ## 2. Declare the collections as root folders in the one tree
 
@@ -12,7 +12,7 @@
 
 ## 3. Layout
 
-- [ ] 3.1 Add `tabMode="navbar"` to the notebook `DocsLayout` in `src/app/(docs)/layout.tsx`, passing no explicit `tabs` so the list is derived from the tree's root folders
+- [ ] 3.1 Add `tabMode="navbar"` to the notebook `DocsLayout` in `src/app/(docs)/layout.tsx`, leaving `sidebar.tabs` unset so the list is derived from the tree's root folders
 - [ ] 3.2 Keep passing the same single tree, and leave the route structure untouched: no collection route segment and no `generateStaticParams` change
 - [ ] 3.3 Make the collection entries' hover and active states reuse the sidebar's colour and shadow tokens, without redeclaring values for the bar
 - [ ] 3.4 Keep the first navbar unchanged: logo, search, AI assistant, For AI, main website, and the social and repository links
@@ -53,3 +53,4 @@
 - [ ] 8.3 Run the full `build`, including the `@vahor/next-broken-links` step, and confirm it passes
 - [ ] 8.4 Confirm the generated surfaces carry collection-scoped URLs: sitemap, search index, `llms.txt`, `llms-full.txt`, the per-page Markdown files with their manifest, and the OG images
 - [ ] 8.5 Walk the built site manually: switch between all four collections, confirm the second header row marks the active collection, confirm the sidebar is scoped to it, and confirm the root lands on the Platform overview
+- [ ] 8.6 Repeat the walk on a narrow viewport, confirming the collection switcher collapses into a control that lists the same collections and marks the same one active
