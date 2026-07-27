@@ -10,19 +10,84 @@ import { SiExpo, SiElectron } from '@icons-pack/react-simple-icons';
  * The version dropdown handles switching for those pages; everything else
  * uses a single bare path per topic.
  */
-export const customTree: Node[] = [
+
+/**
+ * Each top-level node of `customTree` is a collection, declared as a folder
+ * with `root: true`. That flag is what makes Fumadocs treat it as a Layout
+ * Tab and scope the sidebar to it: the framework matches the pathname
+ * against the tree, takes the last root folder on that path as the active
+ * root, and renders only that root's children.
+ *
+ * A collection's `index` is where its tab lands. It is not rendered as a
+ * sidebar entry, so every collection also carries an explicit overview page
+ * among its children — otherwise the overview would be reachable from the
+ * tab but not from the sidebar.
+ *
+ * URLs are still the pre-move ones: the content move is a later step, and
+ * the collection layer works either way because the framework resolves the
+ * active collection from whatever URLs the tree declares.
+ */
+
+const platformChildren: Node[] = [
   {
-    name: 'Home',
+    name: 'Overview',
     url: '/',
     type: 'page',
     icon: resolveIcon('House'),
   },
   {
     type: 'separator',
+    name: 'About QVAC',
+  },
+  {
+    name: 'How it works',
+    url: '/about/how-it-works',
+    type: 'page',
+    icon: resolveIcon('Cog'),
+  },
+  {
+    name: 'Vision',
+    type: 'folder',
+    icon: resolveIcon('Telescope'),
+    index: { type: 'page', name: 'Vision', url: '/about/vision' },
+    children: [
+      {
+        name: 'Public launch',
+        url: '/about/public-launch',
+        type: 'page',
+        icon: resolveIcon('Megaphone'),
+      },
+    ],
+  },
+  {
+    type: 'separator',
+    name: 'Inventory',
+  },
+  {
+    name: 'Addons',
+    type: 'folder',
+    icon: resolveIcon('Blocks'),
+    index: { type: 'page', name: 'Addons', url: '/addons' },
+    children: [
+      { name: 'llm-llamacpp', url: '/addons/llm-llamacpp', type: 'page' },
+      { name: 'embed-llamacpp', url: '/addons/embed-llamacpp', type: 'page' },
+      { name: 'translation-nmtcpp', url: '/addons/translation-nmtcpp', type: 'page' },
+      { name: 'transcription-whispercpp', url: '/addons/transcription-whispercpp', type: 'page' },
+      { name: 'transcription-parakeet', url: '/addons/transcription-parakeet', type: 'page' },
+      { name: 'tts-ggml', url: '/addons/tts-ggml', type: 'page' },
+      { name: 'ocr-onnx', url: '/addons/ocr-onnx', type: 'page' },
+      { name: 'diffusion-cpp', url: '/addons/diffusion-cpp', type: 'page' },
+    ],
+  },
+];
+
+const sdkChildren: Node[] = [
+  {
+    type: 'separator',
     name: 'Getting started',
   },
   {
-    name: 'Introduction',
+    name: 'Overview',
     url: '/introduction',
     type: 'page',
     icon: resolveIcon('DoorOpen'),
@@ -68,29 +133,9 @@ export const customTree: Node[] = [
   },
   {
     name: 'CLI',
-    type: 'folder',
+    url: '/cli',
+    type: 'page',
     icon: resolveIcon('Terminal'),
-    index: { type: 'page', name: 'CLI', url: '/cli' },
-    children: [
-      {
-        name: 'HTTP server',
-        type: 'folder',
-        index: { type: 'page', name: 'HTTP server', url: '/cli/http-server' },
-        icon: resolveIcon('Server'),
-        children: [
-          {
-            name: 'Connect tools',
-            url: '/cli/http-server/connection',
-            type: 'page',
-          },
-          {
-            name: 'Integration',
-            url: '/cli/http-server/integration',
-            type: 'page',
-          },
-        ],
-      },
-    ],
   },
   {
     type: 'separator',
@@ -285,22 +330,6 @@ export const customTree: Node[] = [
     icon: resolveIcon('Tag'),
   },
   {
-    name: 'Addons',
-    type: 'folder',
-    icon: resolveIcon('Blocks'),
-    index: { type: 'page', name: 'Addons', url: '/addons' },
-    children: [
-      { name: 'llm-llamacpp', url: '/addons/llm-llamacpp', type: 'page' },
-      { name: 'embed-llamacpp', url: '/addons/embed-llamacpp', type: 'page' },
-      { name: 'translation-nmtcpp', url: '/addons/translation-nmtcpp', type: 'page' },
-      { name: 'transcription-whispercpp', url: '/addons/transcription-whispercpp', type: 'page' },
-      { name: 'transcription-parakeet', url: '/addons/transcription-parakeet', type: 'page' },
-      { name: 'tts-ggml', url: '/addons/tts-ggml', type: 'page' },
-      { name: 'ocr-onnx', url: '/addons/ocr-onnx', type: 'page' },
-      { name: 'diffusion-cpp', url: '/addons/diffusion-cpp', type: 'page' },
-    ],
-  },
-  {
     type: 'separator',
     name: 'Help',
   },
@@ -317,28 +346,65 @@ export const customTree: Node[] = [
     external: true,
     icon: resolveIcon('MessageCircle'),
   },
+];
+
+const providerChildren: Node[] = [
   {
-    type: 'separator',
-    name: 'About QVAC',
-  },
-  {
-    name: 'How it works',
-    url: '/about/how-it-works',
+    name: 'HTTP server',
+    url: '/cli/http-server',
     type: 'page',
-    icon: resolveIcon('Cog'),
+    icon: resolveIcon('Server'),
   },
   {
-    name: 'Vision',
+    name: 'Connect tools',
+    url: '/cli/http-server/connection',
+    type: 'page',
+  },
+  {
+    name: 'Integration',
+    url: '/cli/http-server/integration',
+    type: 'page',
+  },
+];
+
+/**
+ * Resources has no page yet: its index is the one new page this
+ * reorganization authors for it, and it arrives with the content move. Until
+ * then the folder holds nothing, which keeps it out of the collection bar —
+ * a tab is only emitted for a root folder that has at least one URL.
+ */
+const resourcesChildren: Node[] = [];
+
+export const customTree: Node[] = [
+  {
+    name: 'Platform',
+    description: 'What QVAC is and what ships with it',
     type: 'folder',
-    icon: resolveIcon('Telescope'),
-    index: { type: 'page', name: 'Vision', url: '/about/vision' },
-    children: [
-      {
-        name: 'Public launch',
-        url: '/about/public-launch',
-        type: 'page',
-        icon: resolveIcon('Megaphone'),
-      },
-    ],
+    root: true,
+    index: { type: 'page', name: 'Overview', url: '/' },
+    children: platformChildren,
+  },
+  {
+    name: 'SDK',
+    description: 'Install, configure, and build with the SDK',
+    type: 'folder',
+    root: true,
+    index: { type: 'page', name: 'Overview', url: '/introduction' },
+    children: sdkChildren,
+  },
+  {
+    name: 'Provider',
+    description: 'Run and connect the model provider server',
+    type: 'folder',
+    root: true,
+    index: { type: 'page', name: 'HTTP server', url: '/cli/http-server' },
+    children: providerChildren,
+  },
+  {
+    name: 'Resources',
+    description: 'Tutorials, how-tos, and sample projects',
+    type: 'folder',
+    root: true,
+    children: resourcesChildren,
   },
 ];

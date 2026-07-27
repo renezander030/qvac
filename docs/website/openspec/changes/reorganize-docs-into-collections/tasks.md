@@ -6,9 +6,9 @@
 
 ## 2. Declare the collections as root folders in the one tree
 
-- [ ] 2.1 In `src/lib/custom-tree.ts`, wrap the current top-level nodes in four folder nodes carrying `root: true` — Platform, SDK, Provider, Resources — keeping the module exporting a single `customTree`
-- [ ] 2.2 Give each collection folder the `name` and `description` its tab should show, and an `index` so the tab lands on a chosen page rather than the first one
-- [ ] 2.3 Keep the current authoring style inside each folder, including `separator` nodes for grouping
+- [x] 2.1 In `src/lib/custom-tree.ts`, wrap the current top-level nodes in four folder nodes carrying `root: true` — Platform, SDK, Provider, Resources — keeping the module exporting a single `customTree`
+- [x] 2.2 Give each collection folder the `name` and `description` its tab should show, and an `index` so the tab lands on a chosen page rather than the first one
+- [x] 2.3 Keep the current authoring style inside each folder, including `separator` nodes for grouping
 
 ## 3. Layout
 

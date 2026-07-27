@@ -6,7 +6,6 @@ import { SiHuggingface } from '@icons-pack/react-simple-icons';
 import { KeetIcon } from '@/components/keet-icon';
 import KeetRoomModalMount from '@/components/keet-modal';
 import { customTree } from '@/lib/custom-tree';
-import type { Node } from 'fumadocs-core/page-tree';
 import {
   AskAISearchToggleLarge,
   AskAISearchToggleSmall,
@@ -57,29 +56,13 @@ export default function Layout({ children }: LayoutProps<'/'>) {
 
   const base = baseOptions();
 
-  // SPIKE (openspec/changes/reorganize-docs-into-collections, task 1.2):
-  // throwaway single root folder, only to verify that `tabMode="navbar"`
-  // renders a second header row. Revert or replace with the real four
-  // collections before landing.
-  const spikeTree: Node[] = [
-    {
-      type: 'folder',
-      name: 'Docs',
-      description: 'Everything, for now',
-      root: true,
-      index: { type: 'page', name: 'Home', url: '/' },
-      children: customTree,
-    },
-  ];
-
   return (
     <>
       <DocsLayout
         {...base}
         nav={{ ...base.nav, mode: 'top' }}
-        tabMode="navbar"
         links={linkItems}
-        tree={{ name: 'docs', $id: 'latest', children: spikeTree }}
+        tree={{ name: 'docs', $id: 'latest', children: customTree }}
         searchToggle={{
           components: {
             lg: <AskAISearchToggleLarge />,
