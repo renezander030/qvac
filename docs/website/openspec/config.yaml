@@ -1,13 +1,23 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+# Project context. Shown to the AI when creating any artifact.
+# Kept as a pointer, not a copy: the project context is owned by the Cursor rule
+# and duplicating it here would let the two drift apart.
+context: |
+  This OpenSpec project is rooted at `docs/website` inside the QVAC monorepo. The repo root is two
+  levels up from this file's project root.
+
+  Before generating any artifact, read `.cursor/rules/website/main.mdc`, relative to the repo root.
+  It is the single source of truth for this project's context — purpose, repository layout, tech
+  stack, scope of work, and environments — and it is maintained there rather than here.
+
+  Restated inline, because these are the constraints most costly to miss:
+  - All generated text MUST be written in English, including when the source task is written in
+    another language.
+  - The site is a 100% static export: every HTML page is built into `docs/website/out/` and served
+    from a CDN. There is no server-side runtime, so no artifact may assume one.
+  - Content lives in MDX under `docs/website/content/`. Everything else under `docs/website/` is
+    website source code.
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
