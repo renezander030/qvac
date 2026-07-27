@@ -48,9 +48,9 @@
 
 ## 8. Gates
 
-- [ ] 8.1 Run `tests/sidebar-consistency.test.ts` unmodified and confirm it passes, since the tree stays single and root folders are ordinary folders to it
-- [ ] 8.2 Run `tests/link-integrity.test.ts` and fix every broken internal link it reports
-- [ ] 8.3 Run the full `build`, including the `@vahor/next-broken-links` step, and confirm it passes
-- [ ] 8.4 Confirm the generated surfaces carry collection-scoped URLs: sitemap, search index, `llms.txt`, `llms-full.txt`, the per-page Markdown files with their manifest, and the OG images
-- [ ] 8.5 Walk the built site manually: switch between all four collections, confirm the second header row marks the active collection, confirm the sidebar is scoped to it, and confirm the root lands on the Platform overview
-- [ ] 8.6 Repeat the walk on a narrow viewport, confirming the collection switcher collapses into a control that lists the same collections and marks the same one active
+- [x] 8.1 Run `tests/sidebar-consistency.test.ts` and confirm it passes on the tree unchanged, then extend it over the `fallback` tree the archived version pages render
+- [x] 8.2 Run `tests/link-integrity.test.ts` and fix every broken internal link it reports
+- [x] 8.3 Run the full `build`, including the `@vahor/next-broken-links` step, and confirm it passes
+- [x] 8.4 Confirm the generated surfaces carry collection-scoped URLs: sitemap, search index, `llms.txt`, `llms-full.txt`, the per-page Markdown files with their manifest, and the OG images
+- [x] 8.5 Walk the built site manually: switch between all four collections, confirm the second header row marks the active collection, confirm the sidebar is scoped to it, and confirm the root lands on the Platform overview
+- [x] 8.6 Repeat the walk on a narrow viewport, confirming the collection switcher collapses into a control that lists the same collections and marks the same one active

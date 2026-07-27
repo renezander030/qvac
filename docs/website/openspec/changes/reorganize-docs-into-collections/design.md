@@ -57,13 +57,22 @@ Note that `tabMode` differs between layouts: the default docs layout takes `'top
 tree={{ name: 'docs', $id: 'latest', children: customTree }}
 ```
 
-The only other change to the layout is adding `tabMode="navbar"`. There is no registry, no per-collection tree module, no explicit tab list, and no routing change: the existing `(docs)/layout.tsx` above `[[...slug]]` stays exactly where it is, because it never needs to know which collection is active.
+The other change to the layout is adding `tabMode="navbar"`; the tab list and the `fallback` tree that follow from the decision below are the rest of it. There is no registry, no per-collection tree module, and no routing change: the existing `(docs)/layout.tsx` above `[[...slug]]` stays exactly where it is, because it never needs to know which collection is active.
 
 Give each collection folder an `index` so its tab lands on a predictable page rather than on whichever page happens to come first. Inside a folder, the current authoring style is unchanged, including `separator` nodes for grouping.
 
 Alternatives considered, and why they were dropped. Splitting `custom-tree.ts` into one module per collection behind a registry, with an explicit `tabs` array and a `[collection]` dynamic route segment so the layout could select a tree from `params`, would also work — it was the first design here. It is strictly more code for the same result: a registry to maintain, a tab list that can drift from the tree, a route restructure, and a `generateStaticParams` change. It is only justified once collections are versioned independently and each needs its own loader and `baseUrl`. Declaring the collections with `meta.json` files carrying `root: true` is the other documented route, but this site has no `meta.json` at all and deliberately hand-authors its navigation, so keeping the declaration in `custom-tree.ts` matches the existing convention.
 
-A welcome consequence: because there is still exactly one tree, `tests/sidebar-consistency.test.ts` keeps working unmodified — it already walks the tree recursively collecting URLs, and root folders are just folders to it.
+A welcome consequence: because the navigation stays one hand-authored tree, `tests/sidebar-consistency.test.ts` keeps working — it already walks the tree recursively collecting URLs, and root folders are just folders to it.
+
+### Give the pages that are not in the tree a collection anyway
+
+Making the tree carry the collections means the tree now answers a question it never had to before: which collection a page belongs to. Fumadocs answers it by looking the pathname up in the tree, so a page the tree does not list belongs to nothing — no tab marked, and a sidebar that falls back to listing the four collections. The 16 archived version pages are exactly that: deliberately absent from the sidebar, because the version selector is how a reader moves between them. Two mechanisms put them back:
+
+- **The collection bar gets its entries explicitly**, derived from the same root folders (`collectionTabs`). A tab built by the framework carries the set of URLs declared under its folder and marks itself active only for those; a tab without that set matches the pathname against its own URL instead. Prefix matching is the better rule regardless — "the page lives under `/sdk`" is what belonging to the SDK collection means — and it needs no list to stay in sync.
+- **The sidebar gets them through the tree's `fallback`**, a second tree the framework searches only when the main one misses. Each archived page becomes the `index` of a root folder that mirrors SDK and shares its children. `index` is matched during resolution but is the one node a root folder never renders, so the page joins the collection without appearing in its navigation, and reads as an ordinary SDK page.
+
+Listing the archived pages as ordinary children of a fallback SDK folder was the first attempt. It made them sidebar entries on those pages, and the build's broken-link check rejected their URLs: an archived slug ends in a dot-bearing segment (`v0.8.x`), which the checker reads as a file. That form only resolves with a trailing slash, which the tree cannot carry because URL lookup compares against the node's URL verbatim. Using `index` sidesteps the conflict — the URL is matched, never linked.
 
 ### Generate the redirects and verify them by replaying the old URL list
 

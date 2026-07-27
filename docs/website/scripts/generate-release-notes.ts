@@ -8,8 +8,8 @@
  * Each minor line has a single permanent MDX page that accumulates patch
  * sections as `## vX.Y.Z` blocks:
  *
- *   - latest minor series → `content/docs/reference/release-notes/index.mdx`
- *   - older minor series  → `content/docs/reference/release-notes/v<X.Y>.x.mdx`
+ *   - latest minor series → `content/docs/sdk/reference/release-notes/index.mdx`
+ *   - older minor series  → `content/docs/sdk/reference/release-notes/v<X.Y>.x.mdx`
  *
  * The `## vX.Y.0` block is written by the minor release; subsequent
  * patches insert their `## vX.Y.Z` section directly after the minor

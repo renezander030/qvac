@@ -11,7 +11,7 @@ vi.mock('@/lib/resolveIcon', () => ({
   resolveIcon: () => undefined,
 }))
 
-import { customTree } from '@/lib/custom-tree'
+import { archivedVersionsTree, customTree } from '@/lib/custom-tree'
 import type { Node } from 'fumadocs-core/page-tree'
 
 /**
@@ -38,13 +38,16 @@ function collectUrls (nodes: Node[]): string[] {
 
 /**
  * For a sidebar URL like `/reference/api`, the content file resolves to either:
- *   - `content/docs/reference/api.mdx`, or
- *   - `content/docs/reference/api/index.mdx`
+ *   - `content/docs/sdk/reference/api.mdx`, or
+ *   - `content/docs/sdk/reference/api/index.mdx`
  *
  * Anchor-only URLs (`/#community`) resolve against the docs root index.
+ *
+ * A trailing slash is dropped first: the archived version entries carry one,
+ * because their dotted slug (`v0.8.x`) needs it to resolve at the CDN.
  */
 function getExpectedPaths (url: string): string[] {
-  const cleanUrl = url.split('#')[0].replace(/^\//, '')
+  const cleanUrl = url.split('#')[0].replace(/^\//, '').replace(/\/$/, '')
   if (!cleanUrl) {
     return [path.join(CONTENT_DIR, 'index.mdx')]
   }
@@ -55,7 +58,14 @@ function getExpectedPaths (url: string): string[] {
 }
 
 describe('sidebar-consistency', () => {
-  const urls = [...new Set(collectUrls(customTree as Node[]))]
+  // The fallback tree is a sidebar too — the one the archived version pages
+  // render — so a dangling entry there breaks navigation just the same.
+  const urls = [
+    ...new Set([
+      ...collectUrls(customTree as Node[]),
+      ...collectUrls(archivedVersionsTree.children),
+    ]),
+  ]
 
   it.each(urls)('has content file for %s', (url) => {
     const candidates = getExpectedPaths(url)

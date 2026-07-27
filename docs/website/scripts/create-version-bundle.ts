@@ -12,8 +12,8 @@
  * derives the series filename from it.
  *
  * Sections snapshotted by this script:
- *   - `content/docs/reference/api/index.mdx`           → `vX.Y.x.mdx`
- *   - `content/docs/reference/release-notes/index.mdx` → `vX.Y.x.mdx`
+ *   - `content/docs/sdk/reference/api/index.mdx`           → `vX.Y.x.mdx`
+ *   - `content/docs/sdk/reference/release-notes/index.mdx` → `vX.Y.x.mdx`
  *
  * Usage:
  *   bun run scripts/create-version-bundle.ts <outgoing-version>

@@ -22,6 +22,8 @@ The goal of this context (chat) is to improve this website. This includes: the w
 
 `docs/website/` contains website source code and WITHIN it, `docs/website/content/` contains all content (resources) in MDX files.
 
+Content is partitioned into collections. Each top-level folder under `docs/website/content/docs/` is one collection — `platform`, `sdk`, `provider`, `resources` — and owns the URL namespace formed by its name. Every page belongs to exactly one collection, so no `.mdx` file sits directly under `content/docs/`. A new page MUST be created inside the collection it belongs to.
+
 ## Tech Stack
 
 - **Framework:** Next.js + Fumadocs

@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
- * Refresh `src/lib/versions.ts` from the contents of `content/docs/reference/api/`
- * and `content/docs/reference/release-notes/`.
+ * Refresh `src/lib/versions.ts` from the contents of `content/docs/sdk/reference/api/`
+ * and `content/docs/sdk/reference/release-notes/`.
  *
  * The site has two versioned sections (API summary, release notes), each
  * served as a single MDX file **per minor series**:

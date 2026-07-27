@@ -5,7 +5,11 @@ import { FaGithub, FaDiscord, FaXTwitter } from 'react-icons/fa6';
 import { SiHuggingface } from '@icons-pack/react-simple-icons';
 import { KeetIcon } from '@/components/keet-icon';
 import KeetRoomModalMount from '@/components/keet-modal';
-import { customTree } from '@/lib/custom-tree';
+import {
+  archivedVersionsTree,
+  collectionTabs,
+  customTree,
+} from '@/lib/custom-tree';
 import {
   AskAISearchToggleLarge,
   AskAISearchToggleSmall,
@@ -63,7 +67,13 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         nav={{ ...base.nav, mode: 'top' }}
         tabMode="navbar"
         links={linkItems}
-        tree={{ name: 'docs', $id: 'latest', children: customTree }}
+        sidebar={{ tabs: collectionTabs }}
+        tree={{
+          name: 'docs',
+          $id: 'latest',
+          children: customTree,
+          fallback: archivedVersionsTree,
+        }}
         searchToggle={{
           components: {
             lg: <AskAISearchToggleLarge />,

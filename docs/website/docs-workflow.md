@@ -48,9 +48,9 @@ Content falls into two categories:
 
 | Category | Path | Committed? |
 |---|---|---|
-| Manual content (guides, tutorials, addons) | `content/docs/sdk/`, `content/docs/addons/`, `content/docs/about-qvac/`, etc. | Yes |
-| SDK API summary (generated) | `content/docs/reference/api/index.mdx`, `content/docs/reference/api/v<X.Y>.x.mdx` | Yes (committed once per minor release) |
-| SDK release notes (generated) | `content/docs/reference/release-notes/index.mdx`, `content/docs/reference/release-notes/v<X.Y>.x.mdx` | Yes (committed on every minor and patch release) |
+| Manual content (guides, tutorials, addons) | one collection folder per top level: `content/docs/platform/`, `content/docs/sdk/`, `content/docs/provider/`, `content/docs/resources/` | Yes |
+| SDK API summary (generated) | `content/docs/sdk/reference/api/index.mdx`, `content/docs/sdk/reference/api/v<X.Y>.x.mdx` | Yes (committed once per minor release) |
+| SDK release notes (generated) | `content/docs/sdk/reference/release-notes/index.mdx`, `content/docs/sdk/reference/release-notes/v<X.Y>.x.mdx` | Yes (committed on every minor and patch release) |
 
 The SDK API summary and release notes are **generated from TypeScript source / package CHANGELOGs** via [TypeDoc](https://typedoc.org/) and Nunjucks. They live as a single MDX file **per minor series** — the latest minor at `index.mdx`, older minors as sibling `v<X.Y>.x.mdx` files (literal `x` marker; one permanent page per minor line, accumulating patch sections inside). Generation is triggered by the release pipeline; locally a maintainer can regenerate to preview.
 
@@ -68,8 +68,8 @@ SDK source (packages/sdk)
 Phase 1: TypeDoc extraction  ──►  api-data.json
   │
   ▼
-Phase 2: Nunjucks rendering  ──►  content/docs/reference/api/index.mdx        (latest minor)
-                              ──►  content/docs/reference/api/v<X.Y>.x.mdx     (frozen older minor series)
+Phase 2: Nunjucks rendering  ──►  content/docs/sdk/reference/api/index.mdx        (latest minor)
+                              ──►  content/docs/sdk/reference/api/v<X.Y>.x.mdx     (frozen older minor series)
                               ──►  src/lib/versions.ts                          (version switcher)
 ```
 
@@ -133,10 +133,10 @@ bun run scripts/generate-api-docs.ts <version> [flags]
 Examples:
 
 ```bash
-# Re-render the latest summary into content/docs/reference/api/index.mdx
+# Re-render the latest summary into content/docs/sdk/reference/api/index.mdx
 bun run scripts/generate-api-docs.ts 0.11.0 --latest
 
-# Render an older minor series into content/docs/reference/api/v0.10.x.mdx (no --latest)
+# Render an older minor series into content/docs/sdk/reference/api/v0.10.x.mdx (no --latest)
 bun run scripts/generate-api-docs.ts 0.10.0
 
 # Bump only the frontmatter title (called by the minor freeze flow):
@@ -147,9 +147,9 @@ bun run scripts/generate-api-docs.ts 0.10.0 --target=v0.10.x.mdx --title-only
 This will:
 1. Run TypeDoc against the SDK entry point (`SDK_PATH/index.ts`) and write `api-data.json`
 2. Render a single MDX via the Nunjucks `single-page.njk` template:
-   - `--latest` → `content/docs/reference/api/index.mdx`
-   - `--target=<file>` → `content/docs/reference/api/<file>` (explicit override)
-   - otherwise → `content/docs/reference/api/v<X.Y>.x.mdx` (series-named)
+   - `--latest` → `content/docs/sdk/reference/api/index.mdx`
+   - `--target=<file>` → `content/docs/sdk/reference/api/<file>` (explicit override)
+   - otherwise → `content/docs/sdk/reference/api/v<X.Y>.x.mdx` (series-named)
 3. Run a smoke test that checks for `## Functions` and `## Errors` headings
 
 `--title-only` short-circuits this: it skips TypeDoc + render and only
@@ -186,7 +186,7 @@ After generating docs, refresh `src/lib/versions.ts` from disk:
 bun run scripts/update-versions-list.ts [--latest=X.Y.Z]
 ```
 
-This walks `content/docs/reference/api/` and `content/docs/reference/release-notes/` for `vX.Y.x.mdx` siblings (series-named) and rebuilds the section manifests (`API_SECTION`, `RELEASE_NOTES_SECTION`). The optional `--latest=X.Y.Z` flag overrides which precise patch is recorded as `section.latest` (used for the page title's latest-patch range); the selector itself only shows series labels (`v0.11.x (latest)`, `v0.10.x`, ...). Defaults to the SDK's `package.json` version when `--latest` is omitted.
+This walks `content/docs/sdk/reference/api/` and `content/docs/sdk/reference/release-notes/` for `vX.Y.x.mdx` siblings (series-named) and rebuilds the section manifests (`API_SECTION`, `RELEASE_NOTES_SECTION`). The optional `--latest=X.Y.Z` flag overrides which precise patch is recorded as `section.latest` (used for the page title's latest-patch range); the selector itself only shows series labels (`v0.11.x (latest)`, `v0.10.x`, ...). Defaults to the SDK's `package.json` version when `--latest` is omitted.
 
 ### Full Generation (Orchestrated)
 
@@ -204,7 +204,7 @@ This runs `generate-api-docs.ts --latest` followed by `update-versions-list.ts` 
 
 Only the API summary and release notes are versioned. Every other content surface (about-qvac, getting-started, examples, tutorials, addons, cli, http-server, home) lives at a single bare path that always reflects the current SDK.
 
-Each versioned section is one folder under `content/docs/reference/` containing one MDX **per minor series** (literal `x` marker in the filename):
+Each versioned section is one folder under `content/docs/sdk/reference/` containing one MDX **per minor series** (literal `x` marker in the filename):
 
 ```
 content/docs/
@@ -386,7 +386,7 @@ Two GitHub Actions workflows touch the docs: one validates docs PRs, one manuall
 
 **Purpose:** Catches build errors and broken links in docs PRs before merge.
 
-The API summary `index.mdx` lives at `content/docs/reference/api/` and is committed to the repo (refreshed locally by the `qv-sdk-changelog` skill Step 8 during SDK release prep), so PR checkouts always have it on disk — no placeholder step is needed.
+The API summary `index.mdx` lives at `content/docs/sdk/reference/api/` and is committed to the repo (refreshed locally by the `qv-sdk-changelog` skill Step 8 during SDK release prep), so PR checkouts always have it on disk — no placeholder step is needed.
 
 ### 2. Promote docs to production (manual)
 
@@ -416,7 +416,7 @@ The API summary `index.mdx` lives at `content/docs/reference/api/` and is commit
    - **Minor (`X.Y.0`)** — full flow: freezes the outgoing `index.mdx` into a series sibling `v<outgoingMajor>.<outgoingMinor>.x.mdx`, generates the new API summary into `index.mdx` (TypeDoc + render — output is deterministic by construction), generates the new release notes into `index.mdx` (per-package verbatim `CHANGELOG_LLM.md` under a single `## v<X.Y.0>` block), refreshes `src/lib/versions.ts`.
    - **Patch (`X.Y.Z`, `Z >= 1`)** — `release-version-patch.ts` inspects `src/lib/versions.ts` and picks `patch-latest` (incoming `X.Y` == latest `X.Y`: insert `## v<X.Y.Z>` directly after the existing `## v<X.Y>.0` block of `index.mdx`) or `patch-archived` (older minor: insert the same section into the existing `v<X.Y>.x.mdx`, no rename). The API summary page is never touched by patches.
 2. Runs `npm run build` from `docs/website` to verify the site still compiles (fail-stop on error).
-3. Only the generated surfaces are committed — `content/docs/reference/api/**`, `content/docs/reference/release-notes/**`, and `src/lib/versions.ts`. The skill only generates files (it never runs `git add`); review `git status` and commit these, while all build/generation byproducts (`api-data.json`, `.next/`, `.source/`, `out/`, `dist/`) are gitignored so they never show up.
+3. Only the generated surfaces are committed — `content/docs/sdk/reference/api/**`, `content/docs/sdk/reference/release-notes/**`, and `src/lib/versions.ts`. The skill only generates files (it never runs `git add`); review `git status` and commit these, while all build/generation byproducts (`api-data.json`, `.next/`, `.source/`, `out/`, `dist/`) are gitignored so they never show up.
 
 The dual-checkout race window the old CI workflow guarded against does not apply locally: the skill runs in the single release working tree after the changelog is generated, so the SDK source and CHANGELOGs are already the released state.
 
@@ -521,7 +521,7 @@ Version vX.Y.Z was not found
 
 ### Build fails in CI (PR checks)
 
-The committed `content/docs/reference/api/index.mdx` is what `next build` reads. If the build still fails:
+The committed `content/docs/sdk/reference/api/index.mdx` is what `next build` reads. If the build still fails:
 
 1. Check that `source.config.ts` and `next.config.mjs` are valid
 2. Run `bun run build` locally to reproduce

@@ -1,6 +1,7 @@
 import { source } from '@/lib/source';
 import { LATEST_VERSION } from '@/lib/versions';
 import { isArchivedPage } from '@/lib/docs-open-graph';
+import { customTree } from '@/lib/custom-tree';
 import type { InferPageType } from 'fumadocs-core/source';
 
 // Resolves the response at build time so the result is written to
@@ -13,14 +14,22 @@ type Page = InferPageType<typeof source>;
 const ROOT_SECTION = '(root)';
 
 /**
+ * The collections in the order the collection bar lists them, read from the
+ * same tree that renders the bar so the two never drift apart.
+ */
+const COLLECTION_ORDER = customTree.flatMap((node) =>
+  node.type === 'folder' && node.index?.url ? [node.index.url.slice(1)] : [],
+);
+
+/**
  * Generates the `llms.txt` agent index at build time.
  *
  * Format follows the de-facto convention popularized by https://llmstxt.org/:
  * an H1 with the project name, a short paragraph describing the site, a
- * "Guidance" preamble, and one `## Section` per top-level slug whose body is
- * a bullet list of `- [Title](url): description` entries.
+ * "Guidance" preamble, and one `## Section` per collection section whose body
+ * is a bullet list of `- [Title](url): description` entries.
  *
- * Archived per-section versions (e.g. `/reference/api/v0.7.0`) are filtered
+ * Archived per-section versions (e.g. `/sdk/reference/api/v0.7.0`) are filtered
  * out via `isArchivedPage` so the index advertises only the latest canonical
  * documentation — consistent with `sitemap.xml`, `llms-full.txt`, and the
  * per-page `noindex` metadata.
@@ -31,7 +40,7 @@ export function GET() {
     .filter((page) => !isArchivedPage(page))
     .sort((a, b) => a.url.localeCompare(b.url));
 
-  const grouped = groupPagesByTopLevelSlug(pages);
+  const grouped = groupPagesBySection(pages);
 
   const lines: string[] = [
     '# QVAC Documentation',
@@ -57,25 +66,31 @@ export function GET() {
   return new Response(lines.join('\n') + '\n');
 }
 
-function groupPagesByTopLevelSlug(pages: Page[]): Record<string, Page[]> {
+/**
+ * Groups by collection and then by the section within it, so a heading reads
+ * `SDK / AI Capabilities`. Grouping by the first slug alone would put all 53
+ * SDK pages under one heading, since the collection now occupies the slot the
+ * section used to.
+ */
+function groupPagesBySection(pages: Page[]): Record<string, Page[]> {
   const initial: Record<string, Page[]> = {};
   for (const page of pages) {
-    const key = page.slugs[0] ?? ROOT_SECTION;
+    const [collection, section] = page.slugs;
+    const key = collection
+      ? section
+        ? `${collection}/${section}`
+        : collection
+      : ROOT_SECTION;
     (initial[key] ??= []).push(page);
   }
 
-  // Collapse standalone root pages (single-slug, only entry in their group)
-  // into the root section so they don't each spawn a one-entry `##` heading.
-  // Sections that genuinely have multiple pages (e.g. `cli` with `/cli` and
-  // `/cli/http-server`) keep their own heading.
+  // A section holding a single page directly under its collection (say
+  // `/sdk/quickstart`) folds into the collection's own heading, rather than
+  // spawning a one-entry section of its own.
   const collapsed: Record<string, Page[]> = {};
   for (const [key, list] of Object.entries(initial)) {
-    if (
-      key !== ROOT_SECTION &&
-      list.length === 1 &&
-      list[0].slugs.length === 1
-    ) {
-      (collapsed[ROOT_SECTION] ??= []).push(list[0]);
+    if (list.length === 1 && list[0].slugs.length === 2) {
+      (collapsed[list[0].slugs[0]] ??= []).push(list[0]);
     } else {
       collapsed[key] = list;
     }
@@ -83,21 +98,48 @@ function groupPagesByTopLevelSlug(pages: Page[]): Record<string, Page[]> {
   return collapsed;
 }
 
-/** Keeps `(root)` first so top-level pages (quickstart, installation, …) lead. */
+/** Sorts alphabetically, but after every collection the bar knows about. */
+function collectionRank(collection: string): number {
+  const rank = COLLECTION_ORDER.indexOf(collection);
+  return rank === -1 ? COLLECTION_ORDER.length : rank;
+}
+
+/**
+ * Orders collections as the collection bar presents them, and within one puts
+ * the collection's own pages ahead of its sections.
+ */
 function compareSections(a: string, b: string): number {
   if (a === ROOT_SECTION) return -1;
   if (b === ROOT_SECTION) return 1;
-  return a.localeCompare(b);
+
+  const [aCollection, aSection] = a.split('/');
+  const [bCollection, bSection] = b.split('/');
+  if (aCollection !== bCollection) {
+    return collectionRank(aCollection) - collectionRank(bCollection);
+  }
+  if (!aSection) return -1;
+  if (!bSection) return 1;
+  return aSection.localeCompare(bSection);
 }
+
+/** Initialisms the `<= 3` rule below is too short to catch. */
+const INITIALISMS = new Set(['http']);
 
 function formatSectionTitle(key: string): string {
   if (key === ROOT_SECTION) return 'Overview';
   return key
-    .split('-')
+    .split('/')
     .map((part) =>
-      part.length <= 3 ? part.toUpperCase() : part.charAt(0).toUpperCase() + part.slice(1),
+      part
+        .split('-')
+        .map((word) =>
+          word.length <= 3 || INITIALISMS.has(word)
+            ? word.toUpperCase()
+            : word.charAt(0).toUpperCase() + word.slice(1),
+        )
+        .join(' '),
     )
-    .join(' ');
+    .join(' / ');
 }
 
 function formatPageEntry(page: Page): string {

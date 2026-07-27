@@ -46,7 +46,7 @@ The design rule is: keep general OpenAI-compatible behavior in `@qvac/cli`, gene
 | CLI OpenAI server | `packages/cli/src/serve` | `@qvac/cli` | Runs `qvac serve openai`, exposes OpenAI-compatible HTTP routes, owns request/response translation, model alias routing, auth/CORS, cancellation, queueing, and lifecycle for loaded models. |
 | AI SDK provider | `packages/ai-sdk-provider` | `@qvac/ai-sdk-provider` | Vercel AI SDK provider wrapper. Owns `createQvac`, external/managed modes, typed model metadata exports, friendly catalog ids, and managed serve reuse/lifecycle. |
 | OpenCode plugin | `plugins/opencode` | `@qvac/opencode-plugin` | OpenCode-specific turnkey setup. Starts a host process, injects a `qvac` provider into OpenCode config, selects project model defaults, applies temporary OpenAI-compat shims, and tears down on exit. |
-| Public HTTP docs | `docs/website/content/docs/cli/http-server` | QVAC docs | Public setup docs for OpenAI-compatible tools. OpenCode docs should be plugin-first; manual server setup is the advanced/custom-provider path. |
+| Public HTTP docs | `docs/website/content/docs/provider/http-server` | QVAC docs | Public setup docs for OpenAI-compatible tools. OpenCode docs should be plugin-first; manual server setup is the advanced/custom-provider path. |
 | Architecture docs | `docs/architecture` | Internal repo docs | Design/reference material for maintainers and agents. |
 | External provider catalog | `providers/qvac` in `anomalyco/models.dev` | `models.dev` entry | External discovery metadata for QVAC provider/models. Not a runtime source of truth. |
 
@@ -352,4 +352,4 @@ Before opening or updating PRs for this stack:
 - `.cursor/rules/sdk/main.mdc` — SDK coding conventions.
 - `packages/ai-sdk-provider/README.md` — public provider docs.
 - `plugins/opencode/README.md` — public plugin docs.
-- `docs/website/content/docs/cli/http-server/connection.mdx` — public tool/OpenCode setup docs.
+- `docs/website/content/docs/provider/http-server/connection.mdx` — public tool/OpenCode setup docs.

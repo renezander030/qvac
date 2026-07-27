@@ -1,4 +1,9 @@
-import type { Node } from 'fumadocs-core/page-tree';
+import type { Node, Root } from 'fumadocs-core/page-tree';
+import {
+  API_SECTION,
+  RELEASE_NOTES_SECTION,
+  type VersionedSection,
+} from '@/lib/versions';
 import { resolveIcon } from '@/lib/resolveIcon';
 import React from 'react';
 import { SiExpo, SiElectron } from '@icons-pack/react-simple-icons';
@@ -6,7 +11,8 @@ import { SiExpo, SiElectron } from '@icons-pack/react-simple-icons';
 /**
  * Only the API summary and release notes are versioned (one MDX per
  * version; latest at `index.mdx`, older at `vX.Y.Z.mdx` under
- * `content/docs/reference/api` and `content/docs/reference/release-notes`).
+ * `content/docs/sdk/reference/api` and
+ * `content/docs/sdk/reference/release-notes`).
  * The version dropdown handles switching for those pages; everything else
  * uses a single bare path per topic.
  */
@@ -422,3 +428,66 @@ export const customTree: Node[] = [
     children: resourcesChildren,
   },
 ];
+
+/**
+ * The collection bar's entries, derived from the same folders that scope the
+ * sidebar so the two can never list different collections.
+ *
+ * Passing them explicitly, rather than letting the layout derive them, is what
+ * decides a page's collection by URL prefix: a derived tab carries the set of
+ * URLs declared under its folder and marks itself active only for those, which
+ * leaves any page absent from the tree belonging to no collection at all. A
+ * tab without that set falls back to matching the pathname against its own
+ * URL, which is what "the page lives under `/sdk`" means here.
+ */
+export const collectionTabs = customTree.flatMap((node) =>
+  node.type === 'folder' && node.root && node.index
+    ? [
+        {
+          url: node.index.url,
+          title: node.name,
+          description: node.description,
+        },
+      ]
+    : [],
+);
+
+/**
+ * One SDK root folder per archived version page, carrying that page as its
+ * `index` and the SDK's real children as its own.
+ *
+ * The archived pages are deliberately absent from the sidebar — the version
+ * selector is how a reader moves between them — but Fumadocs resolves the
+ * active collection by finding the pathname in the tree, so a page that is not
+ * there belongs to no collection: the sidebar falls back to listing the four
+ * collections. A folder's `index` is matched during that resolution and is the
+ * one node a root folder never renders as a sidebar entry, which is exactly
+ * the asymmetry these pages need. Each therefore resolves to a folder that
+ * looks like SDK, and reads as an ordinary SDK page: SDK marked in the
+ * collection bar, the SDK sidebar beside it, and no entry of its own anywhere.
+ */
+function archivedVersionRoots(section: VersionedSection): Node[] {
+  return section.versions
+    .filter((version) => !version.isLatest)
+    .map((version) => ({
+      name: 'SDK',
+      description: 'Install, configure, and build with the SDK',
+      type: 'folder',
+      root: true,
+      index: {
+        type: 'page',
+        name: version.label,
+        url: `${section.basePath}/${version.value}`,
+      },
+      children: sdkChildren,
+    }));
+}
+
+/** The tree the framework searches only when the main one has no match. */
+export const archivedVersionsTree: Root = {
+  name: 'Archived versions',
+  children: [
+    ...archivedVersionRoots(API_SECTION),
+    ...archivedVersionRoots(RELEASE_NOTES_SECTION),
+  ],
+};

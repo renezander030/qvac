@@ -3,10 +3,10 @@
  * Generate the API summary MDX for one SDK version's minor series.
  *
  * Output target:
- *   - latest:  content/docs/reference/api/index.mdx
- *   - older:   content/docs/reference/api/v<X.Y>.x.mdx  (literal "x" — one
+ *   - latest:  content/docs/sdk/reference/api/index.mdx
+ *   - older:   content/docs/sdk/reference/api/v<X.Y>.x.mdx  (literal "x" — one
  *              permanent page per minor line)
- *   - --target=<file>: content/docs/reference/api/<file> (explicit override)
+ *   - --target=<file>: content/docs/sdk/reference/api/<file> (explicit override)
  *
  * Patches never re-render or relabel the API summary: the public API is
  * frozen at the minor boundary, so a patch by definition adds nothing
