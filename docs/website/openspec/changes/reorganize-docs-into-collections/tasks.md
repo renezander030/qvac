@@ -12,11 +12,11 @@
 
 ## 3. Layout
 
-- [ ] 3.1 Add `tabMode="navbar"` to the notebook `DocsLayout` in `src/app/(docs)/layout.tsx`, leaving `sidebar.tabs` unset so the list is derived from the tree's root folders
-- [ ] 3.2 Keep passing the same single tree, and leave the route structure untouched: no collection route segment and no `generateStaticParams` change
-- [ ] 3.3 Make the collection entries' hover and active states reuse the sidebar's colour and shadow tokens, without redeclaring values for the bar
-- [ ] 3.4 Keep the first navbar unchanged: logo, search, AI assistant, For AI, main website, and the social and repository links
-- [ ] 3.5 Verify the site builds, the tabs render, and the sidebar scopes to the active collection while all content is still in its original location
+- [x] 3.1 Add `tabMode="navbar"` to the notebook `DocsLayout` in `src/app/(docs)/layout.tsx`, leaving `sidebar.tabs` unset so the list is derived from the tree's root folders
+- [x] 3.2 Keep passing the same single tree, and leave the route structure untouched: no collection route segment and no `generateStaticParams` change
+- [x] 3.3 Make the collection entries' hover and active states reuse the sidebar's colour tokens, without redeclaring values for the bar
+- [x] 3.4 Keep the first navbar unchanged: logo, search, AI assistant, For AI, main website, and the social and repository links
+- [x] 3.5 Verify the site builds, the tabs render, and the sidebar scopes to the active collection while all content is still in its original location
 
 ## 4. Move content into collections
 

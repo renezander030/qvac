@@ -34,23 +34,24 @@ The site SHALL present a second level of navigation, below the existing top navb
 
 ### Requirement: Collection entries share the sidebar's hover and active treatment
 
-The hover and active states of a collection entry SHALL reuse the colour and shadow treatment the sidebar already applies to its own items, so the two navigation surfaces read as one system rather than two. The states MUST come from the same design tokens the sidebar uses, not from values redeclared for the bar.
+The hover and active states of a collection entry SHALL reuse the colour treatment the sidebar already applies to its own items, so the two navigation surfaces read as one system rather than two. The states MUST come from the same design tokens the sidebar uses, not from values redeclared for the bar. The bar MAY keep an active marker of its own, since the two surfaces mark the active entry differently — a bar has a baseline to underline, a vertical list does not.
 
 #### Scenario: Hovering a collection entry
 
 - **WHEN** the pointer rests on a collection entry that is not active
-- **THEN** its background colour and shadow match what the sidebar applies to a hovered item
+- **THEN** its background shading matches what the sidebar applies to a hovered item
 
 #### Scenario: The active collection entry
 
 - **WHEN** a collection entry is the active one
-- **THEN** its colour and shadow match what the sidebar applies to its active item
+- **THEN** it is drawn in the same colour the sidebar gives its active item
+- **AND** it carries the bar's own active marker
 
 #### Scenario: States are token-driven
 
 - **WHEN** the styles behind these states are inspected
 - **THEN** they resolve to the same tokens the sidebar items use
-- **AND** no colour or shadow value is hardcoded for the collection bar alone
+- **AND** no colour value is hardcoded for the collection bar alone
 
 ### Requirement: Sidebar scoped to the active collection
 

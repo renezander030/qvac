@@ -61,6 +61,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       <DocsLayout
         {...base}
         nav={{ ...base.nav, mode: 'top' }}
+        tabMode="navbar"
         links={linkItems}
         tree={{ name: 'docs', $id: 'latest', children: customTree }}
         searchToggle={{
