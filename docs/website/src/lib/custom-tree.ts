@@ -351,6 +351,12 @@ const sdkChildren: Node[] = [
 
 const providerChildren: Node[] = [
   {
+    name: 'Overview',
+    url: '/provider',
+    type: 'page',
+    icon: resolveIcon('DoorOpen'),
+  },
+  {
     name: 'HTTP server',
     url: '/provider/http-server',
     type: 'page',
@@ -369,12 +375,18 @@ const providerChildren: Node[] = [
 ];
 
 /**
- * Resources has no page yet: its index is the one new page this
- * reorganization authors for it, and it arrives with the content move. Until
- * then the folder holds nothing, which keeps it out of the collection bar —
- * a tab is only emitted for a root folder that has at least one URL.
+ * Resources holds a single page, its index. The collection exists as a
+ * destination for material published outside the docs site, so until that
+ * material is indexed here there is nothing else to list.
  */
-const resourcesChildren: Node[] = [];
+const resourcesChildren: Node[] = [
+  {
+    name: 'Overview',
+    url: '/resources',
+    type: 'page',
+    icon: resolveIcon('DoorOpen'),
+  },
+];
 
 export const customTree: Node[] = [
   {
@@ -398,7 +410,7 @@ export const customTree: Node[] = [
     description: 'Run and connect the model provider server',
     type: 'folder',
     root: true,
-    index: { type: 'page', name: 'HTTP server', url: '/provider/http-server' },
+    index: { type: 'page', name: 'Overview', url: '/provider' },
     children: providerChildren,
   },
   {
@@ -406,6 +418,7 @@ export const customTree: Node[] = [
     description: 'Tutorials, how-tos, and sample projects',
     type: 'folder',
     root: true,
+    index: { type: 'page', name: 'Overview', url: '/resources' },
     children: resourcesChildren,
   },
 ];

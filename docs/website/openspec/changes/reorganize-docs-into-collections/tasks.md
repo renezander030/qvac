@@ -29,9 +29,9 @@
 
 ## 5. The two permitted new pages
 
-- [ ] 5.1 Add the Provider collection overview, the only new page in Provider, so the collection has a landing target
-- [ ] 5.2 Add the Resources collection index as its only page, describing what the collection will index
-- [ ] 5.3 Confirm no other page was added by diffing the page set against the pre-move fixture
+- [x] 5.1 Add the Provider collection overview, the only new page in Provider, so the collection has a landing target
+- [x] 5.2 Add the Resources collection index as its only page, describing what the collection will index
+- [x] 5.3 Confirm no other page was added by diffing the page set against the pre-move fixture
 
 ## 6. Path-dependent scripts
 
