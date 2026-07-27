@@ -17,11 +17,11 @@ Provide an image to `classify()` as a `Uint8Array` of either:
 ## Functions
 
 Use the following sequence of function calls:
-1. [`loadModel()`](/reference/api#loadmodel)
-2. [`classify()`](/reference/api#classify)
-3. [`unloadModel()`](/reference/api#unloadmodel)
+1. [`loadModel()`](/sdk/reference/api#loadmodel)
+2. [`classify()`](/sdk/reference/api#classify)
+3. [`unloadModel()`](/sdk/reference/api#unloadmodel)
 
-For how to use each function, see [SDK — API reference](/reference/api/).
+For how to use each function, see [SDK — API reference](/sdk/reference/api/).
 
 ## Models
 
@@ -29,7 +29,7 @@ Supported model families and their file layouts:
 
 - **MobileNetV3-Small**: single all-in-one `*.gguf` file — the base model or any fine-tune of the same architecture (converted to GGUF). Fine-tunes may define their own classes and labels; the label set is sourced from the GGUF metadata.
 
-For models available as constants, see [SDK — Models](/introduction#models).
+For models available as constants, see [SDK — Models](/sdk#models).
 
 <Callout type="info">
 **Default model:** alternatively, you can load no model at all. In that case the base **MobileNetV3-Small** classifier is loaded automatically — no `modelSrc` and no download required. It emits the following fixed labels: `"food"`, `"report"`, and `"other"`.
@@ -58,5 +58,5 @@ The following script classifies a JPEG image using the bundled MobileNetV3-Small
 </Tabs>
 
 <Callout type="success">
-**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/quickstart).
+**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/sdk/quickstart).
 </Callout>

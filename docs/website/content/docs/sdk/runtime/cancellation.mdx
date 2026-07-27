@@ -17,16 +17,16 @@ The mental model is: **the primary path is `requestId`** — pass the run's `req
 
 **Duplex sessions** — `transcribeStream(...)` and `textToSpeechStream(...)` use `.destroy()` on the returned session.
 
-**Finetune** — keeps its own cancel surface: `finetune({ operation: "cancel", ... })`. See [Fine-tuning](/ai-capabilities/fine-tuning).
+**Finetune** — keeps its own cancel surface: `finetune({ operation: "cancel", ... })`. See [Fine-tuning](/sdk/ai-capabilities/fine-tuning).
 </Callout>
 
 ## Functions
 
-1. [`completion()`](/reference/api#completion) and [`batchCompletion()`](/ai-capabilities/batch-processing) — return a run object that exposes a synchronous `requestId` field.
-2. [`loadModel()`](/reference/api#loadmodel), [`downloadAsset()`](/reference/api#downloadasset), [`embed()`](/reference/api#embed), [`transcribe()`](/reference/api#transcribe), and the [`rag*()`](/ai-capabilities/rag) workspace operations (`ragIngest`, `ragSaveEmbeddings`, `ragReindex`) — return a decorated promise (`Promise<T> & { requestId: string }`) that exposes a synchronous `requestId` field before the first await resolves.
-3. [`cancel()`](/reference/api#cancel) — cancel by `requestId` (targeted) or by `modelId` (broad, optionally narrowed by `kind`).
+1. [`completion()`](/sdk/reference/api#completion) and [`batchCompletion()`](/sdk/ai-capabilities/batch-processing) — return a run object that exposes a synchronous `requestId` field.
+2. [`loadModel()`](/sdk/reference/api#loadmodel), [`downloadAsset()`](/sdk/reference/api#downloadasset), [`embed()`](/sdk/reference/api#embed), [`transcribe()`](/sdk/reference/api#transcribe), and the [`rag*()`](/sdk/ai-capabilities/rag) workspace operations (`ragIngest`, `ragSaveEmbeddings`, `ragReindex`) — return a decorated promise (`Promise<T> & { requestId: string }`) that exposes a synchronous `requestId` field before the first await resolves.
+3. [`cancel()`](/sdk/reference/api#cancel) — cancel by `requestId` (targeted) or by `modelId` (broad, optionally narrowed by `kind`).
 
-For how to use each function, see [SDK — API reference](/reference/api/).
+For how to use each function, see [SDK — API reference](/sdk/reference/api/).
 
 ## Where `requestId` comes from
 
@@ -67,7 +67,7 @@ Outcome on the consumer side (using `completion()` as the reference):
 
 - The `events` async iterable closes cleanly.
 - The terminal `completionDone` event carries `stopReason: "cancelled"`.
-- The `final` promise rejects with [`InferenceCancelledError`](/reference/api#errors) (code `52419`).
+- The `final` promise rejects with [`InferenceCancelledError`](/sdk/reference/api#errors) (code `52419`).
 
 Other operations that go through `cancel({ requestId })` (`loadModel`, `downloadAsset`, `embed`, `transcribe`, `rag*`) all reject their returned promise with the same `InferenceCancelledError` (code `52419`) — the error class is reused across non-inference handlers, no new code was added.
 
@@ -159,7 +159,7 @@ The following script loads a model, starts a streaming `completion()`, cancels i
 </Tabs>
 
 <Callout type="success">
-**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/quickstart).
+**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/sdk/quickstart).
 </Callout>
 
 ## Errors

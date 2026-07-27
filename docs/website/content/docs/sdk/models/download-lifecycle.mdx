@@ -6,19 +6,19 @@ schemaType: HowTo
 
 ## Overview
 
-Downloads in QVAC are _resumable by default_. When you download an asset via [`downloadAsset()`](/reference/api#downloadasset) or [`loadModel()`](/reference/api#loadmodel)), the SDK writes partial files to disk so the next run can continue from where it left off. The progress callback provides a `downloadKey` that identifies the underlying transfer (useful for dedup and cache identification), but cancellation is targeted by `requestId`.
+Downloads in QVAC are _resumable by default_. When you download an asset via [`downloadAsset()`](/sdk/reference/api#downloadasset) or [`loadModel()`](/sdk/reference/api#loadmodel)), the SDK writes partial files to disk so the next run can continue from where it left off. The progress callback provides a `downloadKey` that identifies the underlying transfer (useful for dedup and cache identification), but cancellation is targeted by `requestId`.
 
 Both `downloadAsset()` and `loadModel()` return a decorated promise (`Promise<string> & { requestId: string }`) that exposes a synchronous `requestId` field, so you can wire a stop button to a specific in-flight call without waiting for the first progress event. See [Cancel a specific call by `requestId`](#cancel-a-specific-call-by-requestid) below.
 
 ## Functions
 
-1. [`downloadAsset()`](/reference/api#downloadasset) or [`loadModel()`](/reference/api#loadmodel) — with `onProgress` for progress tracking; both return a decorated promise that exposes `op.requestId` synchronously.
-2. [`cancel()`](/reference/api#cancel) — either:
+1. [`downloadAsset()`](/sdk/reference/api#downloadasset) or [`loadModel()`](/sdk/reference/api#loadmodel) — with `onProgress` for progress tracking; both return a decorated promise that exposes `op.requestId` synchronously.
+2. [`cancel()`](/sdk/reference/api#cancel) — either:
    - `cancel({ requestId: op.requestId })` — pause this specific call (preserves the partial file for automatic resume on the next run).
    - `cancel({ requestId: op.requestId, clearCache: true })` — discard the partial file along with the cancel.
-   - `cancel({ modelId })` — broad sweep that cancels every in-flight request on the given model, including non-download ops. See [Cancellation — broad cancel by `modelId`](/runtime/cancellation#broad-cancel-by-modelid-escape-hatch).
+   - `cancel({ modelId })` — broad sweep that cancels every in-flight request on the given model, including non-download ops. See [Cancellation — broad cancel by `modelId`](/sdk/runtime/cancellation#broad-cancel-by-modelid-escape-hatch).
 
-For how to use each function, see [SDK — API reference](/reference/api/).
+For how to use each function, see [SDK — API reference](/sdk/reference/api/).
 
 ## Cancel a specific call by `requestId`
 
@@ -39,11 +39,11 @@ await op; // rejects with InferenceCancelledError if cancelled
 
 When two callers request the same artifact, the SDK deduplicates them onto a single underlying transfer. `cancel({ requestId })` rejects only the cancelling subscriber's promise; the underlying transfer keeps running to serve any other subscribers. The transfer is aborted only when the **last** subscriber leaves.
 
-For the broader cancellation contract (errors, decorated-promise pattern across other SDK operations, broad cancel by `modelId`), see [Cancellation](/runtime/cancellation).
+For the broader cancellation contract (errors, decorated-promise pattern across other SDK operations, broad cancel by `modelId`), see [Cancellation](/sdk/runtime/cancellation).
 
 ## Flow
 
-- Pause: call [`cancel()`](/reference/api#cancel) with `requestId: op.requestId` from the decorated promise returned by `downloadAsset()` / `loadModel()`.
+- Pause: call [`cancel()`](/sdk/reference/api#cancel) with `requestId: op.requestId` from the decorated promise returned by `downloadAsset()` / `loadModel()`.
 - Resume: run the same `downloadAsset()` / `loadModel()` call again — the SDK will reuse the partial file and continue downloading.
 - Discard partial file: call `cancel({ requestId: op.requestId, clearCache: true })`.
 
@@ -70,6 +70,6 @@ The following script shows an example of pausing and resuming a download using `
 </Tabs>
 
 <Callout type="success">
-**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/quickstart).
+**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/sdk/quickstart).
 </Callout>
 

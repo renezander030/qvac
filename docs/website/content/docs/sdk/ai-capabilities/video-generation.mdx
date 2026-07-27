@@ -17,11 +17,11 @@ Video generation is hardware-intensive: it requires at least **16 GB of video me
 ## Functions
 
 Use the following sequence of function calls:
-1. [`loadModel()`](/reference/api#loadmodel)
-2. [`video()`](/reference/api#video)
-3. [`unloadModel()`](/reference/api#unloadmodel)
+1. [`loadModel()`](/sdk/reference/api#loadmodel)
+2. [`video()`](/sdk/reference/api#video)
+3. [`unloadModel()`](/sdk/reference/api#unloadmodel)
 
-For how to use each function, see [SDK — API reference](/reference/api/).
+For how to use each function, see [SDK — API reference](/sdk/reference/api/).
 
 ### `video()`
 
@@ -50,7 +50,7 @@ Two model families are supported — **WAN 2.1** and **LTX-2** — and the file 
 LTX-2 is large (~21B) — budget at least **20 GB** of video / unified memory.
 </Callout>
 
-For models available as constants, see [SDK — Models](/introduction#models).
+For models available as constants, see [SDK — Models](/sdk#models).
 
 ## Examples
 
@@ -143,5 +143,5 @@ The following script animates a first-frame `init_image` with LTX-2. Unlike WAN 
 </Tabs>
 
 <Callout type="success">
-**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/quickstart).
+**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/sdk/quickstart).
 </Callout>

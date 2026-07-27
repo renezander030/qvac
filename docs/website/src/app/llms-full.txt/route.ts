@@ -12,12 +12,12 @@ export const revalidate = false;
  *
  * Concatenates the processed Markdown of every non-archived page into a
  * single dump so AI agents can ingest the full documentation in one fetch.
- * Per-section archived versions (`/reference/api/v0.7.0`, etc.) are excluded
+ * Per-section archived versions (`/sdk/reference/api/v0.7.0`, etc.) are excluded
  * via `isArchivedPage` so the dump only carries the latest canonical
  * documentation — consistent with `sitemap.xml`, `llms.txt`, and per-page
  * `noindex` metadata.
  *
- * Additionally, the entire release-notes section (`/reference/release-notes`
+ * Additionally, the entire release-notes section (`/sdk/reference/release-notes`
  * and its archived series) is dropped via `isReleaseNotesPage`. Release notes
  * are historical changelogs whose bulk text inflates the dump's token count
  * and dilutes an agent's reasoning without adding context needed for SDK

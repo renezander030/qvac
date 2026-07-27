@@ -6,7 +6,7 @@ schemaType: HowTo
 
 ## Overview
 
-Fine-tuning trains a [LoRA](https://arxiv.org/abs/2106.09685) (Low-Rank Adaptation) adapter on top of an LLM base model, to be used at inference time with [completion](/ai-capabilities/text-generation).
+Fine-tuning trains a [LoRA](https://arxiv.org/abs/2106.09685) (Low-Rank Adaptation) adapter on top of an LLM base model, to be used at inference time with [completion](/sdk/ai-capabilities/text-generation).
 
 Load any supported LLM using `modelType: "llm"`. Then call `finetune()` with the dataset and training settings. Training can be done in two modes:
 
@@ -18,15 +18,15 @@ The output is a small `.gguf` adapter file that you can pass to `completion()` v
 ## Functions
 
 Use the following sequence of function calls:
-1. [`loadModel()`](/reference/api#loadmodel)
-2. [`finetune()`](/reference/api#finetune)
-3. [`unloadModel()`](/reference/api#unloadmodel)
+1. [`loadModel()`](/sdk/reference/api#loadmodel)
+2. [`finetune()`](/sdk/reference/api#finetune)
+3. [`unloadModel()`](/sdk/reference/api#unloadmodel)
 
-For how to use each function, see [SDK — API reference](/reference/api/).
+For how to use each function, see [SDK — API reference](/sdk/reference/api/).
 
 ## Models
 
-You can load any `llama.cpp`-compatible [text-generation/chat](/ai-capabilities/text-generation) model that meets the following criteria:
+You can load any `llama.cpp`-compatible [text-generation/chat](/sdk/ai-capabilities/text-generation) model that meets the following criteria:
 - **File format:** `*.gguf` (or use constants)
 - **Architecture:** `qwen3`, `gemma3`, or `bitnet`
 - **Quantization:** `F32`, `F16`, `Q4_0`, `Q8_0`, `TQ1_0`, or `TQ2_0`
@@ -37,7 +37,7 @@ In QVAC, not every model compatible with text generation/chat is also compatible
 
 </Callout>
 
-For models available as constants, see [SDK — Models](/introduction#models). Note that not every model constant is fine-tunable: for example, many Qwen3-4B/8B constants are `Q4_K_M`. Check a model's quantization with [`getModelInfo()`](/reference/api#getmodelinfo) before training.
+For models available as constants, see [SDK — Models](/sdk#models). Note that not every model constant is fine-tunable: for example, many Qwen3-4B/8B constants are `Q4_K_M`. Check a model's quantization with [`getModelInfo()`](/sdk/reference/api#getmodelinfo) before training.
 
 ## Training
 
@@ -183,5 +183,5 @@ process.exit(exitCode);
 </WrapCode>
 
 <Callout type="success">
-**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/quickstart).
+**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/sdk/quickstart).
 </Callout>

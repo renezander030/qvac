@@ -8,7 +8,7 @@ schemaType: HowTo
 
 Each QVAC AI capability maps to a **built-in plugin** in the SDK. This lets you enable only what you need for your project and reduce your application's final bundle size.
 
-In addition, you can add **custom plugins** — both your own and community ones — that extend QVAC's capabilities. In both cases, you'll use the QVAC configuration file and then bundle either with [QVAC CLI](/cli) or [programmatically via `@qvac/sdk/commands`](#notes).
+In addition, you can add **custom plugins** — both your own and community ones — that extend QVAC's capabilities. In both cases, you'll use the QVAC configuration file and then bundle either with [QVAC CLI](/sdk/cli) or [programmatically via `@qvac/sdk/commands`](#notes).
 
 ## Built-in plugins
 
@@ -18,23 +18,23 @@ All the built-in plugins you can select, along with the AI tasks that depend on 
 
 | Plugin | Use in `qvac.config.*` | AI tasks that require it |
 | --- | --- | --- |
-| LLM | `@qvac/sdk/llamacpp-completion/plugin` | [Text generation](/ai-capabilities/text-generation); [multimodal](/ai-capabilities/multimodal); [RAG](/ai-capabilities/rag) ; [Fine-tuning](/ai-capabilities/fine-tuning) |
-| Embeddings | `@qvac/sdk/llamacpp-embedding/plugin` | [Text embeddings](/ai-capabilities/text-embeddings); [RAG](/ai-capabilities/rag) |
-| ASR with customized Whisper engine | `@qvac/sdk/whispercpp-transcription/plugin` | [Transcription](/ai-capabilities/transcription) |
-| ASR with Parakeet | `@qvac/sdk/parakeet-transcription/plugin` | [Transcription](/ai-capabilities/transcription) |
-| BCI transcription | `@qvac/sdk/bci-whispercpp-transcription/plugin` | [Transcription](/ai-capabilities/transcription#bci-neural-signal-transcription) |
-| BCI transcription | `@qvac/sdk/bci-whispercpp-transcription/plugin` | [Transcription](/ai-capabilities/transcription#bci-neural-signal-transcription) |
-| NMT | `@qvac/sdk/nmtcpp-translation/plugin` | [Translation](/ai-capabilities/translation) |
-| TTS | `@qvac/sdk/onnx-tts/plugin` | [Text-to-Speech](/ai-capabilities/text-to-speech) |
-| OCR | `@qvac/sdk/onnx-ocr/plugin` | [OCR](/ai-capabilities/ocr) |
-| Diffusion | `@qvac/sdk/sdcpp-generation/plugin` | [Image generation](/ai-capabilities/image-generation) |
+| LLM | `@qvac/sdk/llamacpp-completion/plugin` | [Text generation](/sdk/ai-capabilities/text-generation); [multimodal](/sdk/ai-capabilities/multimodal); [RAG](/sdk/ai-capabilities/rag) ; [Fine-tuning](/sdk/ai-capabilities/fine-tuning) |
+| Embeddings | `@qvac/sdk/llamacpp-embedding/plugin` | [Text embeddings](/sdk/ai-capabilities/text-embeddings); [RAG](/sdk/ai-capabilities/rag) |
+| ASR with customized Whisper engine | `@qvac/sdk/whispercpp-transcription/plugin` | [Transcription](/sdk/ai-capabilities/transcription) |
+| ASR with Parakeet | `@qvac/sdk/parakeet-transcription/plugin` | [Transcription](/sdk/ai-capabilities/transcription) |
+| BCI transcription | `@qvac/sdk/bci-whispercpp-transcription/plugin` | [Transcription](/sdk/ai-capabilities/transcription#bci-neural-signal-transcription) |
+| BCI transcription | `@qvac/sdk/bci-whispercpp-transcription/plugin` | [Transcription](/sdk/ai-capabilities/transcription#bci-neural-signal-transcription) |
+| NMT | `@qvac/sdk/nmtcpp-translation/plugin` | [Translation](/sdk/ai-capabilities/translation) |
+| TTS | `@qvac/sdk/onnx-tts/plugin` | [Text-to-Speech](/sdk/ai-capabilities/text-to-speech) |
+| OCR | `@qvac/sdk/onnx-ocr/plugin` | [OCR](/sdk/ai-capabilities/ocr) |
+| Diffusion | `@qvac/sdk/sdcpp-generation/plugin` | [Image generation](/sdk/ai-capabilities/image-generation) |
 
 ### Enabling
 
 <Steps>
 
 <Step>
-[In your `qvac.config.*`, add the built-in plugins you’ll need in your project](/configuration). For example:
+[In your `qvac.config.*`, add the built-in plugins you’ll need in your project](/sdk/configuration). For example:
 
 ```json title="qvac.config.json"
 {
@@ -57,7 +57,7 @@ qvac bundle sdk
 ```
 </Tab>
 <Tab value="mobile" label="Expo">
-[When developing for mobile environment, use the Expo CLI to prebuild your project only with the selected plugins:](/installation/#expo)
+[When developing for mobile environment, use the Expo CLI to prebuild your project only with the selected plugins:](/sdk/installation/#expo)
 
 ```bash
 npx expo prebuild
@@ -72,8 +72,8 @@ Only the selected plugins are included in your bundle, significantly reducing yo
 <Callout type="success">
 **Tips:**
 - You **do not need** the CLI (`@qvac/cli`) to bundle the SDK. See [Notes](#notes) to learn how to do it programmatically via `@qvac/sdk/commands`.
-- See [QVAC CLI](/cli) to learn how to install and use it.
-- When developing an Electron app, you can bundle the SDK during packaging via Electron Forge. See [Tutorials → Electron → Step 4: package for distribution](/tutorials/electron#step-4-package-for-distribution).
+- See [QVAC CLI](/sdk/cli) to learn how to install and use it.
+- When developing an Electron app, you can bundle the SDK during packaging via Electron Forge. See [Tutorials → Electron → Step 4: package for distribution](/sdk/tutorials/electron#step-4-package-for-distribution).
 </Callout>
 
 ## Custom plugins
@@ -94,7 +94,7 @@ npm i qvac-echo-plugin
 
 <Step>
 
-[In your `qvac.config.*`, add its `<package_name>/plugin` specifier alongside any built-in plugins](/configuration). For example:
+[In your `qvac.config.*`, add its `<package_name>/plugin` specifier alongside any built-in plugins](/sdk/configuration). For example:
 
 ```json title="qvac.config.json"
 {
@@ -117,7 +117,7 @@ qvac bundle sdk
 ```
 </Tab>
 <Tab value="mobile" label="Expo">
-[When developing for mobile environment, use the Expo CLI to prebuild your project with all listed plugins:](/installation/#expo)
+[When developing for mobile environment, use the Expo CLI to prebuild your project with all listed plugins:](/sdk/installation/#expo)
 
 ```bash
 npx expo prebuild
@@ -181,7 +181,7 @@ For direct Bare usage we recommend [`@qvac/bare-sdk`](https://github.com/tethert
 
 * In `qvac.config.*`, if `plugins` is omitted or set to an empty array, the SDK bundles all built-in plugins. If `plugins` is set, it bundles only the listed plugins.
 * [Each plugin maps to one QVAC addon](https://github.com/tetherto/qvac/tree/main/packages).
-* [Write a custom plugin](/configuration/plugins/write-custom-plugin).
+* [Write a custom plugin](/sdk/configuration/plugins/write-custom-plugin).
 * **Programmatic bundling:** you can also prepare and validate the SDK bundle programmatically via API from a Node script. For example:
 
 ```ts

@@ -16,7 +16,7 @@ flowchart LR
     Spk -.conversation loop.-> Mic
 ```
 
-Each stage maps to a QVAC capability — [Transcription](/ai-capabilities/transcription) (ASR), [Text generation](/ai-capabilities/text-generation) (LLM), and [Text-to-Speech](/ai-capabilities/text-to-speech) (TTS).
+Each stage maps to a QVAC capability — [Transcription](/sdk/ai-capabilities/transcription) (ASR), [Text generation](/sdk/ai-capabilities/text-generation) (LLM), and [Text-to-Speech](/sdk/ai-capabilities/text-to-speech) (TTS).
 
 Compared to using each capability individually, the key differences are:
 - You need to coordinate **three model loads** simultaneously (Whisper + VAD, LLM, and TTS bundle) — they all stay loaded for the duration of the session.
@@ -27,13 +27,13 @@ Compared to using each capability individually, the key differences are:
 ## Functions
 
 Use the following sequence of function calls:
-1. [`loadModel()`](/reference/api#loadmodel) three times — once per `modelType` (`"whisper"`, `"llm"`, `"tts"`).
-2. [`transcribeStream()`](/reference/api#transcribestream) — open a streaming session that emits utterances on VAD-detected pauses.
-3. [`completion()`](/reference/api#completion) — generate a response from the rolling conversation history (streamed).
-4. [`textToSpeech()`](/reference/api#texttospeech) — synthesize the response into a PCM buffer.
-5. [`unloadModel()`](/reference/api#unloadmodel) for each loaded model on shutdown.
+1. [`loadModel()`](/sdk/reference/api#loadmodel) three times — once per `modelType` (`"whisper"`, `"llm"`, `"tts"`).
+2. [`transcribeStream()`](/sdk/reference/api#transcribestream) — open a streaming session that emits utterances on VAD-detected pauses.
+3. [`completion()`](/sdk/reference/api#completion) — generate a response from the rolling conversation history (streamed).
+4. [`textToSpeech()`](/sdk/reference/api#texttospeech) — synthesize the response into a PCM buffer.
+5. [`unloadModel()`](/sdk/reference/api#unloadmodel) for each loaded model on shutdown.
 
-For how to use each function, see [SDK — API reference](/reference/api/).
+For how to use each function, see [SDK — API reference](/sdk/reference/api/).
 
 ## Models
 
@@ -51,7 +51,7 @@ Recommended defaults (used in the example below):
 | LLM | `LLAMA_3_2_1B_INST_Q4_0` |
 | TTS | Supertonic2 (English) |
 
-For models available as constants, see [SDK — Models](/introduction#models).
+For models available as constants, see [SDK — Models](/sdk#models).
 
 ## Example
 
@@ -159,9 +159,9 @@ If you're running with headphones (mic cannot hear the speaker), you can loosen 
 
 - **Different ASR model:** swap `WHISPER_TINY` for a larger Whisper model for better transcription accuracy (e.g. `WHISPER_BASE_Q8_0`, `WHISPER_SMALL_Q8_0`, `WHISPER_LARGE_V3_TURBO`, etc.).
 - **Different LLM:** swap `LLAMA_3_2_1B_INST_Q4_0` for any LLM constant from `@qvac/sdk`. Larger models give better answers at the cost of latency.
-- **Different voice:** replace the Supertonic constants with another TTS model (e.g. Chatterbox — see [Text-to-Speech](/ai-capabilities/text-to-speech)).
+- **Different voice:** replace the Supertonic constants with another TTS model (e.g. Chatterbox — see [Text-to-Speech](/sdk/ai-capabilities/text-to-speech)).
 - **System prompt:** edit `SYSTEM_PROMPT` at the top of the script. The default instructs the LLM to be concise and avoid markdown so responses are pleasant to listen to.
 
 <Callout type="success">
-**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/quickstart).
+**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/sdk/quickstart).
 </Callout>

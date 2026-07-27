@@ -31,7 +31,7 @@ Install the CLI globally (this also installs `@qvac/sdk` as a transitive depende
 npm install -g @qvac/cli
 ```
 
-See [Installation](/installation) for environment-specific instructions of the SDK (e.g., Linux Vulkan runtime, Windows GPU drivers).
+See [Installation](/sdk/installation) for environment-specific instructions of the SDK (e.g., Linux Vulkan runtime, Windows GPU drivers).
 </Step>
 
 <Step>
@@ -76,9 +76,9 @@ curl http://localhost:11434/v1/chat/completions \
 
 ## Configuration
 
-Models are declared in `qvac.config.*` under the `serve.models` key. The server can only load models listed under this key — requests for unlisted models return 404. Each key in `serve.models` is a **model alias** — the name that HTTP clients use in the `model` field of their requests. For the full schema of `serve.models`, see [Configuration — `ServeConfig`](/configuration#serveconfig).
+Models are declared in `qvac.config.*` under the `serve.models` key. The server can only load models listed under this key — requests for unlisted models return 404. Each key in `serve.models` is a **model alias** — the name that HTTP clients use in the `model` field of their requests. For the full schema of `serve.models`, see [Configuration — `ServeConfig`](/sdk/configuration#serveconfig).
 
-<Card href="/cli/http-server/connection" title="Connect AI tools">
+<Card href="/provider/http-server/connection" title="Connect AI tools">
   Learn how to use the HTTP server as a local model provider for AI tools that support OpenAI-compatible API.
 </Card>
 
@@ -112,7 +112,7 @@ Models are declared in `qvac.config.*` under the `serve.models` key. The server 
 - **`model`**: SDK model constant name (e.g., `QWEN3_600M_INST_Q4`). The server resolves it to a download source and addon type automatically.
 - **`default`**: when `true`, marks this model as the default for its endpoint category. This does not make the server auto-select the model for requests that omit `model`.
 - **`preload`**: when `true`, the model is loaded into memory on server startup. When `false`, it is loaded on first request (cold start). Defaults to `true` for constant model entries.
-- **`config`**: model config overrides passed to the underlying addon. Same options as [`modelConfig` in `loadModel()`](/reference/api#loadmodel).
+- **`config`**: model config overrides passed to the underlying addon. Same options as [`modelConfig` in `loadModel()`](/sdk/reference/api#loadmodel).
 
 <Callout type="warn">
 `default` field **does not** act as a fallback when an API request omits `model`. Requests must still include a `model` field; otherwise, the server returns `400`.
@@ -122,7 +122,7 @@ Models are declared in `qvac.config.*` under the `serve.models` key. The server 
 
 To create a client, you can use any OpenAI-compatible AI SDK provider, such as [Vercel AI SDK](https://ai-sdk.dev). For a better developer experience, use our npm package `@qvac/ai-sdk-provider`.
 
-<Card href="/cli/http-server/integration" title="Use @qvac/ai-sdk-provider">
+<Card href="/provider/http-server/integration" title="Use @qvac/ai-sdk-provider">
   Vercel AI SDK provider for QVAC: introspection of supported models, automatic configuration, branded export, and more.
 </Card>
 

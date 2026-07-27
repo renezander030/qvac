@@ -41,10 +41,10 @@
 
 ## 7. URL continuity
 
-- [ ] 7.1 Generate one `_redirects` entry per moved page from the move mapping, inserted above the terminal `/*  /404.html  404` rule
-- [ ] 7.2 Add the root entry redirecting `/` to the Platform overview
-- [ ] 7.3 Add a check that replays the captured pre-move URL set against the built site and fails on any 404
-- [ ] 7.4 Update every internal link that targets a moved page, so no link depends on a redirect
+- [x] 7.1 Generate one `_redirects` entry per moved page from the move mapping, inserted above the terminal `/*  /404.html  404` rule
+- [x] 7.2 Add the root entry redirecting `/` to the Platform overview
+- [x] 7.3 Add a check that replays the captured pre-move URL set against the built site and fails on any 404
+- [x] 7.4 Update every internal link that targets a moved page, so no link depends on a redirect
 
 ## 8. Gates
 

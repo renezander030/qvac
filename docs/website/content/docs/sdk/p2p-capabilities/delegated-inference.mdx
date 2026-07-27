@@ -10,20 +10,20 @@ Lets a **consumer** delegate inference requests to a remote **provider** in a P2
 
 Connectivity is direct: the consumer opens a `dht.connect(providerPublicKey)` connection straight to the provider — there is no topic or discovery phase. The provider exposes itself on the DHT via its keypair, and consumers connect by public key.
 
-Delegation is configured at model-load time by passing a `delegate` object to [`loadModel()`](/reference/api#loadmodel). The provider is started separately using [`startQVACProvider()`](/reference/api#startqvacprovider).
+Delegation is configured at model-load time by passing a `delegate` object to [`loadModel()`](/sdk/reference/api#loadmodel). The provider is started separately using [`startQVACProvider()`](/sdk/reference/api#startqvacprovider).
 
 ## Functions
 
 **Provider:**
-1. [`startQVACProvider()`](/reference/api#startqvacprovider) — bind the DHT server on the provider's keypair and start accepting delegated requests
-2. [`stopQVACProvider()`](/reference/api#stopqvacprovider) — stop accepting requests
+1. [`startQVACProvider()`](/sdk/reference/api#startqvacprovider) — bind the DHT server on the provider's keypair and start accepting delegated requests
+2. [`stopQVACProvider()`](/sdk/reference/api#stopqvacprovider) — stop accepting requests
 
 **Consumer:**
-1. [`loadModel()`](/reference/api#loadmodel) — with `delegate` option
-2. [`completion()`](/reference/api#completion) / [`transcribe()`](/reference/api#transcribe) / [`translate()`](/reference/api#translate) / etc. — same as local
-3. [`unloadModel()`](/reference/api#unloadmodel)
+1. [`loadModel()`](/sdk/reference/api#loadmodel) — with `delegate` option
+2. [`completion()`](/sdk/reference/api#completion) / [`transcribe()`](/sdk/reference/api#transcribe) / [`translate()`](/sdk/reference/api#translate) / etc. — same as local
+3. [`unloadModel()`](/sdk/reference/api#unloadmodel)
 
-For how to use each function, see [SDK — API reference](/reference/api/).
+For how to use each function, see [SDK — API reference](/sdk/reference/api/).
 
 ## Provider
 
@@ -85,12 +85,12 @@ The following script shows an example of starting a provider and printing its `p
 </Tabs>
 
 <Callout type="success">
-**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/quickstart).
+**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/sdk/quickstart).
 </Callout>
 
 ## Notes
 
 - Consumers do not handle reconnection automatically yet. If the provider restarts, restart the consumer.
-- To stop a running provider, call [`stopQVACProvider()`](/reference/api#stopqvacprovider).
+- To stop a running provider, call [`stopQVACProvider()`](/sdk/reference/api#stopqvacprovider).
 - When starting the provider, you can optionally set a firewall rule to allow/deny specific consumer public keys.
 - Cold-start DHT bootstrap on the first connect can take 15–45s; subsequent connections in the same process are sub-second.

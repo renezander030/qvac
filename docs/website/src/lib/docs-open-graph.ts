@@ -25,7 +25,7 @@ const VERSION_SLUG_RE = /^v\d+\.\d+\.\d+$/;
  *   reference is mostly the same surface re-printed with marginal diffs
  *   (near-duplicate content). Letting Google index all of them dilutes
  *   ranking signals across the four pages instead of consolidating
- *   authority on `/reference/api`. AI ingestion of multiple snapshots also
+ *   authority on `/sdk/reference/api`. AI ingestion of multiple snapshots also
  *   risks cross-version hallucination (an LLM mixing assignatures from
  *   v0.7.0 and v0.10.2). Better to fold the back-versions into the
  *   canonical "latest" page.
@@ -128,8 +128,8 @@ export function isArchivedPage(page: ArchivePageRef): boolean {
 
 /**
  * True when the page belongs to the release-notes section — its latest
- * (`/reference/release-notes`) or any archived series
- * (`/reference/release-notes/vX.Y.x`).
+ * (`/sdk/reference/release-notes`) or any archived series
+ * (`/sdk/reference/release-notes/vX.Y.x`).
  *
  * Used exclusively by `llms-full.txt` to keep release notes out of the
  * full-documentation dump (QVAC-21379): each release note is a historical
@@ -194,8 +194,8 @@ export function buildCanonicalDocsUrl(slugs: string[] | undefined): string {
  * For archived pages in sections whose back-versions are hidden from
  * indexing (currently the API summary), this returns the URL of the
  * section's **latest** (the bare basePath) — so search engines consolidate
- * authority on `/reference/api/` instead of treating each
- * `/reference/api/vX.Y.Z/` snapshot as its own canonical document. The HTML
+ * authority on `/sdk/reference/api/` instead of treating each
+ * `/sdk/reference/api/vX.Y.Z/` snapshot as its own canonical document. The HTML
  * page also carries `<meta robots="noindex">` (set in `page.tsx`), so the
  * canonical + noindex pair is the textbook "this is a near-duplicate,
  * prefer the canonical" signal.

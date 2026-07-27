@@ -6,21 +6,21 @@ schemaType: HowTo
 
 ## Overview
 
-[Text generation](/ai-capabilities/text-generation) supports multimodal prompts. Multimodal lets you attach media files to inputs for [`completion()`](/reference/api#completion). You can include multiple attachments in the same request (e.g., to compare two images).
+[Text generation](/sdk/ai-capabilities/text-generation) supports multimodal prompts. Multimodal lets you attach media files to inputs for [`completion()`](/sdk/reference/api#completion). You can include multiple attachments in the same request (e.g., to compare two images).
 
 Compared to text-only completion inference, the key differences are:
-- You must load a multimodal-capable LLM **and** its matching `projectionModelSrc` via [`loadModel()`](/reference/api#loadmodel).
+- You must load a multimodal-capable LLM **and** its matching `projectionModelSrc` via [`loadModel()`](/sdk/reference/api#loadmodel).
 - Your `history` messages can include `attachments: [{ path: "/path/to/image.jpg" }]` (the file must exist on disk).
 - Aside from attachments, you still call `completion({ modelId, history, stream })` the same way and consume the same streaming output.
 
 ## Functions
 
 Use the following sequence of function calls:
-1. [`loadModel()`](/reference/api#loadmodel)
-2. [`completion()`](/reference/api#completion)
-3. [`unloadModel()`](/reference/api#unloadmodel)
+1. [`loadModel()`](/sdk/reference/api#loadmodel)
+2. [`completion()`](/sdk/reference/api#completion)
+3. [`unloadModel()`](/sdk/reference/api#unloadmodel)
 
-For how to use each function, see [SDK — API reference](/reference/api/).
+For how to use each function, see [SDK — API reference](/sdk/reference/api/).
 
 ## Models
 
@@ -32,7 +32,7 @@ Recommended pairs:
 - SmolVLM2 + mmproj-*
 - Qwen2.5-Omni + mmproj-* (or Qwen3-VL + mmproj-*)
 
-For models available as constants, see [SDK — Models](/introduction#models).
+For models available as constants, see [SDK — Models](/sdk#models).
 
 ## Example
 
@@ -57,6 +57,6 @@ The following script shows an example of multimodal completion with one image (a
 </Tabs>
 
 <Callout type="success">
-**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/quickstart).
+**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/sdk/quickstart).
 </Callout>
 

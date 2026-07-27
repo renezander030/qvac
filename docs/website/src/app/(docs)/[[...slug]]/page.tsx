@@ -146,7 +146,7 @@ export async function generateMetadata(
   const selfUrl = buildCanonicalDocsUrl(params.slug);
   // SEO canonical. For archived pages in sections whose back-versions are
   // hidden from indexing (API summary), this points to the section's latest
-  // (`/reference/api`) so search engines consolidate authority on the
+  // (`/sdk/reference/api`) so search engines consolidate authority on the
   // canonical page. For every other page — including indexable archived
   // release-notes — this equals `selfUrl`.
   const linkCanonicalUrl = buildPageCanonicalUrl(params.slug);

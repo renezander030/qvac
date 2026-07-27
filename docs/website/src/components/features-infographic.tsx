@@ -136,7 +136,7 @@ export const DEFAULT_FEATURES: Feature[] = [
     description:
       'Run AI models locally, without relying on third-party APIs, SaaS, or cloud infrastructure.',
     angle: 315,
-    href: '/quickstart',
+    href: '/sdk/quickstart',
   },
   {
     id: 'p2p',
@@ -144,7 +144,7 @@ export const DEFAULT_FEATURES: Feature[] = [
     description:
       'Delegate inference to peers and build AI systems that work across P2P networks.',
     angle: 45,
-    href: '/p2p-capabilities/delegated-inference',
+    href: '/sdk/p2p-capabilities/delegated-inference',
   },
   {
     id: 'cross-platform',
@@ -152,7 +152,7 @@ export const DEFAULT_FEATURES: Feature[] = [
     description:
       'Consistent developer experience across hardware, operating systems, and JavaScript runtimes — write code once, run it everywhere.',
     angle: 90,
-    href: '/installation#supported-environments',
+    href: '/sdk/installation#supported-environments',
   },
   {
     id: 'pluggable',
@@ -160,7 +160,7 @@ export const DEFAULT_FEATURES: Feature[] = [
     description:
       'Include only the capabilities your app needs, and extend the SDK with custom plugins.',
     angle: 135,
-    href: '/configuration/plugins',
+    href: '/sdk/configuration/plugins',
   },
   {
     id: 'open-source',
@@ -176,7 +176,7 @@ export const DEFAULT_FEATURES: Feature[] = [
     description:
       'Launch an HTTP server that exposes an OpenAI-compatible API for integration with the broader AI ecosystem.',
     angle: 225,
-    href: '/cli/http-server',
+    href: '/provider/http-server',
   },
   {
     id: 'unified',
@@ -184,7 +184,7 @@ export const DEFAULT_FEATURES: Feature[] = [
     description:
       'Use one typed JavaScript SDK to run multiple AI capabilities from a single npm package.',
     angle: 270,
-    href: '/introduction',
+    href: '/sdk',
   },
 ];
 

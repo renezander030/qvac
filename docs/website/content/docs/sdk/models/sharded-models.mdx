@@ -6,7 +6,7 @@ schemaType: HowTo
 
 ## Overview
 
-Some models may be distributed as **multiple files** (shards) instead of a single large one. [`loadModel()`](/reference/api#loadmodel) supports sharded models and ensures that all shards are available before loading it. For this, shard file names **must** follow the pattern: `<name>-00001-of-0000X.<ext>`.
+Some models may be distributed as **multiple files** (shards) instead of a single large one. [`loadModel()`](/sdk/reference/api#loadmodel) supports sharded models and ensures that all shards are available before loading it. For this, shard file names **must** follow the pattern: `<name>-00001-of-0000X.<ext>`.
 
 <Callout type="info">
 **Important:** for now, sharded models are supported only for GGUF models.
@@ -34,11 +34,11 @@ When using `loadModel()`, you pass the path to the first shard (e.g., `model-000
 
 ## Functions
 
-1. [`loadModel()`](/reference/api#loadmodel) — pass the path/URL of any shard; SDK fetches remaining shards
-2. Use the model as usual ([`completion()`](/reference/api#completion), [`embed()`](/reference/api#embed), etc.)
-3. [`unloadModel()`](/reference/api#unloadmodel)
+1. [`loadModel()`](/sdk/reference/api#loadmodel) — pass the path/URL of any shard; SDK fetches remaining shards
+2. Use the model as usual ([`completion()`](/sdk/reference/api#completion), [`embed()`](/sdk/reference/api#embed), etc.)
+3. [`unloadModel()`](/sdk/reference/api#unloadmodel)
 
-For how to use each function, see [SDK — API reference](/reference/api/).
+For how to use each function, see [SDK — API reference](/sdk/reference/api/).
 
 ## Example
 
@@ -63,5 +63,5 @@ The following script shows an example of loading a sharded model with per-shard 
 </Tabs>
 
 <Callout type="success">
-**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/quickstart).
+**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/sdk/quickstart).
 </Callout>

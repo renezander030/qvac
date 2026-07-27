@@ -15,11 +15,11 @@ Provide audio input as `audioChunk`, either as a file path (string) or an in-mem
 ## Functions
 
 Use the following sequence of function calls:
-1. [`loadModel()`](/reference/api#loadmodel)
-2. [`transcribe()`](/reference/api#transcribe) or [`transcribeStream()`](/reference/api#transcribestream)
-3. [`unloadModel()`](/reference/api#unloadmodel)
+1. [`loadModel()`](/sdk/reference/api#loadmodel)
+2. [`transcribe()`](/sdk/reference/api#transcribe) or [`transcribeStream()`](/sdk/reference/api#transcribestream)
+3. [`unloadModel()`](/sdk/reference/api#unloadmodel)
 
-For how to use each function, see [SDK — API reference](/reference/api/).
+For how to use each function, see [SDK — API reference](/sdk/reference/api/).
 
 ## Models
 
@@ -55,7 +55,7 @@ await loadModel({
 });
 ```
 
-For model artifacts available as constants, see [SDK — Models](/introduction#models).
+For model artifacts available as constants, see [SDK — Models](/sdk#models).
 
 <Callout type="info">
 **Migrating from pre-0.6 Parakeet (ONNX multi-file):** the legacy multi-file ONNX `modelConfig` shape (`parakeetEncoderSrc` / `parakeetDecoderSrc` / `parakeetVocabSrc` / `parakeetPreprocessorSrc`, plus `parakeetCtcModelSrc` / `parakeetTokenizerSrc` and `parakeetSortformerSrc` for the CTC/Sortformer variants) is no longer supported. Passing any of those fields raises a structured `LegacyParakeetModelDeprecatedError` with a migration message. The legacy ONNX constants (e.g. `PARAKEET_TDT_ENCODER_INT8`, `PARAKEET_CTC_FP32`, `PARAKEET_SORTFORMER_FP32`) remain exported for one minor cycle for codemod migrations only and will be removed in a future release.
@@ -204,5 +204,5 @@ The following script shows an example of speaker diarization using the Parakeet 
 </Tabs>
 
 <Callout type="success">
-**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/quickstart).
+**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/sdk/quickstart).
 </Callout>

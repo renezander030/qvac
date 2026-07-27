@@ -15,11 +15,11 @@ BCI consumes a **neural-signal buffer**. Provide the signal as `neuralData`, eit
 ## Functions
 
 Use the following sequence of function calls:
-1. [`loadModel()`](/reference/api#loadmodel)
-2. [`bciTranscribe()`](/reference/api#bcitranscribe) or [`bciTranscribeStream()`](/reference/api#bcitranscribestream)
-3. [`unloadModel()`](/reference/api#unloadmodel)
+1. [`loadModel()`](/sdk/reference/api#loadmodel)
+2. [`bciTranscribe()`](/sdk/reference/api#bcitranscribe) or [`bciTranscribeStream()`](/sdk/reference/api#bcitranscribestream)
+3. [`unloadModel()`](/sdk/reference/api#unloadmodel)
 
-For how to use each function, see [SDK — API reference](/reference/api/).
+For how to use each function, see [SDK — API reference](/sdk/reference/api/).
 
 <Callout type="info">
 **Neural signal format:** the `neuralData` input is a binary `.bin` file (or equivalent `Uint8Array`) with an 8-byte header — `[timesteps: uint32 LE, channels: uint32 LE]` — followed by row-major `float32` feature data (`features[t * channels + c]`). Each timestep represents a 20 ms bin of neural activity; channels correspond to individual electrodes in a microelectrode array (typically 512 channels). When streaming, this same header must lead the written bytes (`timesteps` is then ignored; `channels` must be non-zero).
@@ -35,7 +35,7 @@ BCI transcription loads a **companion set** of two files, both required for infe
 - `ggml-bci-windowed.bin` — the GGML model: Whisper encoder/decoder (LoRA-merged), tokenizer, positional embedding, and windowed-attention header. Available constant: `BCI_WINDOWED`.
 - `bci-embedder.bin` — day-projection weights: per-recording-day low-rank matrices, month projections, and session-to-day mapping. Available constant: `BCI_EMBEDDER`.
 
-For model artifacts available as constants, see [SDK — Models](/introduction#models).
+For model artifacts available as constants, see [SDK — Models](/sdk#models).
 
 ## Examples
 
@@ -84,5 +84,5 @@ The following script feeds neural-signal chunks into a duplex session and prints
 </Tabs>
 
 <Callout type="success">
-**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/quickstart).
+**Tip:** all examples throughout this documentation are self-contained and runnable. For instructions on how to run them, see [SDK quickstart](/sdk/quickstart).
 </Callout>

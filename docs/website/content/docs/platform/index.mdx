@@ -20,49 +20,49 @@ QVAC is Tether's answer to centralized AI by ensuring AI is not tied to massive 
 {/* <task>: <tech process> for <use case>, via <engine> */}
 
 <Cards className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-  <Card href="/ai-capabilities/text-generation" title={<span className="inline-flex items-center gap-2"><MessagesSquare className="size-4 text-[var(--color-fd-primary)]" />Text generation</span>}>
+  <Card href="/sdk/ai-capabilities/text-generation" title={<span className="inline-flex items-center gap-2"><MessagesSquare className="size-4 text-[var(--color-fd-primary)]" />Text generation</span>}>
     LLM inference for text generation and chat via Fabric LLM.
   </Card>
-  <Card href="/ai-capabilities/text-embeddings" title={<span className="inline-flex items-center gap-2"><Hash className="size-4 text-[var(--color-fd-primary)]" />Text embeddings</span>}>
+  <Card href="/sdk/ai-capabilities/text-embeddings" title={<span className="inline-flex items-center gap-2"><Hash className="size-4 text-[var(--color-fd-primary)]" />Text embeddings</span>}>
     Vector embedding generation for semantic search, clustering, and retrieval, via Fabric LLM.
   </Card>
-  <Card href="/ai-capabilities/rag" title={<span className="inline-flex items-center gap-2"><ScanSearch className="size-4 text-[var(--color-fd-primary)]" />RAG</span>}>
+  <Card href="/sdk/ai-capabilities/rag" title={<span className="inline-flex items-center gap-2"><ScanSearch className="size-4 text-[var(--color-fd-primary)]" />RAG</span>}>
     Out-of-the-box retrieval-augmented generation workflow.
   </Card>
-  <Card href="/ai-capabilities/fine-tuning" title={<span className="inline-flex items-center gap-2"><FlaskConical className="size-4 text-[var(--color-fd-primary)]" />Fine-tuning</span>}>
+  <Card href="/sdk/ai-capabilities/fine-tuning" title={<span className="inline-flex items-center gap-2"><FlaskConical className="size-4 text-[var(--color-fd-primary)]" />Fine-tuning</span>}>
     Adapting LLMs to domain-specific tasks via LoRA.
   </Card>
-  <Card href="/ai-capabilities/multimodal" title={<span className="inline-flex items-center gap-2"><GalleryHorizontal className="size-4 text-[var(--color-fd-primary)]" />Multimodal</span>}>
+  <Card href="/sdk/ai-capabilities/multimodal" title={<span className="inline-flex items-center gap-2"><GalleryHorizontal className="size-4 text-[var(--color-fd-primary)]" />Multimodal</span>}>
     LLM inference over text, images, and other media within a single conversation context.
   </Card>
-  <Card href="/ai-capabilities/image-generation" title={<span className="inline-flex items-center gap-2"><ImageIcon className="size-4 text-[var(--color-fd-primary)]" />Image generation</span>}>
+  <Card href="/sdk/ai-capabilities/image-generation" title={<span className="inline-flex items-center gap-2"><ImageIcon className="size-4 text-[var(--color-fd-primary)]" />Image generation</span>}>
     Text-to-image and image-to-image generation via a customized Diffusion backend.
   </Card>
-  <Card href="/ai-capabilities/video-generation" title={<span className="inline-flex items-center gap-2"><Video className="size-4 text-[var(--color-fd-primary)]" />Video generation</span>}>
+  <Card href="/sdk/ai-capabilities/video-generation" title={<span className="inline-flex items-center gap-2"><Video className="size-4 text-[var(--color-fd-primary)]" />Video generation</span>}>
     Text-to-video and image-to-video generation via a customized Diffusion backend.
   </Card>
-  <Card href="/ai-capabilities/transcription" title={<span className="inline-flex items-center gap-2"><Speech className="size-4 text-[var(--color-fd-primary)]" />Transcription</span>}>
+  <Card href="/sdk/ai-capabilities/transcription" title={<span className="inline-flex items-center gap-2"><Speech className="size-4 text-[var(--color-fd-primary)]" />Transcription</span>}>
     Automatic speech recognition (ASR) via a customized Whisper backend or NVIDIA Parakeet.
   </Card>
-  <Card href="/ai-capabilities/text-to-speech" title={<span className="inline-flex items-center gap-2"><Volume2 className="size-4 text-[var(--color-fd-primary)]" />Text-to-Speech</span>}>
+  <Card href="/sdk/ai-capabilities/text-to-speech" title={<span className="inline-flex items-center gap-2"><Volume2 className="size-4 text-[var(--color-fd-primary)]" />Text-to-Speech</span>}>
     Speech synthesis (TTS) via a customized GGML backend.
   </Card>
-  <Card href="/ai-capabilities/voice-assistant" title={<span className="inline-flex items-center gap-2"><Mic className="size-4 text-[var(--color-fd-primary)]" />Voice assistant</span>}>
+  <Card href="/sdk/ai-capabilities/voice-assistant" title={<span className="inline-flex items-center gap-2"><Mic className="size-4 text-[var(--color-fd-primary)]" />Voice assistant</span>}>
     Real-time voice pipeline: transcription, text generation, and speech synthesis in one loop.
   </Card>
-  <Card href="/ai-capabilities/translation" title={<span className="inline-flex items-center gap-2"><Languages className="size-4 text-[var(--color-fd-primary)]" />Translation</span>}>
+  <Card href="/sdk/ai-capabilities/translation" title={<span className="inline-flex items-center gap-2"><Languages className="size-4 text-[var(--color-fd-primary)]" />Translation</span>}>
     Text-to-text neural machine translation (NMT), via Fabric LLM and Bergamot.
   </Card>
-  <Card href="/ai-capabilities/bci" title={<span className="inline-flex items-center gap-2"><Brain className="size-4 text-[var(--color-fd-primary)]" />BCI</span>}>
+  <Card href="/sdk/ai-capabilities/bci" title={<span className="inline-flex items-center gap-2"><Brain className="size-4 text-[var(--color-fd-primary)]" />BCI</span>}>
     Brain–computer interface transcription via a customized Whisper backend.
   </Card>
-  <Card href="/ai-capabilities/vla" title={<span className="inline-flex items-center gap-2"><Eye className="size-4 text-[var(--color-fd-primary)]" />VLA</span>}>
+  <Card href="/sdk/ai-capabilities/vla" title={<span className="inline-flex items-center gap-2"><Eye className="size-4 text-[var(--color-fd-primary)]" />VLA</span>}>
     Vision-language-action for robot control via a customized GGML backend.
   </Card>
-  <Card href="/ai-capabilities/ocr" title={<span className="inline-flex items-center gap-2"><ScanText className="size-4 text-[var(--color-fd-primary)]" />OCR</span>}>
+  <Card href="/sdk/ai-capabilities/ocr" title={<span className="inline-flex items-center gap-2"><ScanText className="size-4 text-[var(--color-fd-primary)]" />OCR</span>}>
     Optical character recognition for extracting text from images via ONNX Runtime.
   </Card>
-  <Card href="/ai-capabilities/image-classification" title={<span className="inline-flex items-center gap-2"><Shapes className="size-4 text-[var(--color-fd-primary)]" />Image classification</span>}>
+  <Card href="/sdk/ai-capabilities/image-classification" title={<span className="inline-flex items-center gap-2"><Shapes className="size-4 text-[var(--color-fd-primary)]" />Image classification</span>}>
     Classify images into labels with confidence scores via a customized GGML backend.
   </Card>
 </Cards>
@@ -115,16 +115,16 @@ Finally, QVAC also encompasses desktop and mobile [**flagship applications**](ht
 Choose how you want to start with QVAC:
 
 <Cards>
-  <Card href="/introduction" icon={<Map className="text-[var(--color-fd-primary)]" />} title="Get started with the SDK">
+  <Card href="/sdk" icon={<Map className="text-[var(--color-fd-primary)]" />} title="Get started with the SDK">
     Learn the essentials for using the SDK: system requirements, compatibility matrix, setup basics, and core usage flows.
   </Card>
-  <Card href="/quickstart" icon={<Rocket className="text-[var(--color-fd-primary)]" />} title="Quickstart">
+  <Card href="/sdk/quickstart" icon={<Rocket className="text-[var(--color-fd-primary)]" />} title="Quickstart">
     Run your first example using the JS/TS SDK. At the end, you'll find instructions to run any example in this documentation.
   </Card>
   <Card href="https://qvac.tether.io/products/workbench/" icon={<MonitorPlay className="text-[var(--color-fd-primary)]" />} title="See QVAC in practice">
     Try QVAC Workbench, our flagship desktop and mobile app built with QVAC.
   </Card>
-  <Card href="/cli/http-server" icon={<Server className="text-[var(--color-fd-primary)]" />} title="Integrate an OpenAI-compatible client">
+  <Card href="/provider/http-server" icon={<Server className="text-[var(--color-fd-primary)]" />} title="Integrate an OpenAI-compatible client">
     Run the QVAC HTTP server and connect any existing OpenAI-compatible system to local AI.
   </Card>
 </Cards>
