@@ -33,6 +33,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath } from "node:url";
+import { API_DIR, RELEASE_NOTES_DIR } from "./lib/release-shared.js";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_WEBSITE_DIR = path.resolve(SCRIPT_DIR, "..");
@@ -131,20 +132,8 @@ function buildSectionLiteral(
 async function updateVersionsList(latestOverride?: string) {
   console.log(`📋 Updating versions list...`);
 
-  const apiDir = path.join(
-    DOCS_WEBSITE_DIR,
-    "content",
-    "docs",
-    "reference",
-    "api",
-  );
-  const releaseNotesDir = path.join(
-    DOCS_WEBSITE_DIR,
-    "content",
-    "docs",
-    "reference",
-    "release-notes",
-  );
+  const apiDir = API_DIR;
+  const releaseNotesDir = RELEASE_NOTES_DIR;
 
   const latest = latestOverride
     ? latestOverride.startsWith("v")
@@ -165,13 +154,13 @@ async function updateVersionsList(latestOverride?: string) {
   );
 
   const apiSection = buildSectionLiteral(
-    "/reference/api",
+    "/sdk/reference/api",
     latest,
     latestSeries,
     apiOlder,
   );
   const releaseNotesSection = buildSectionLiteral(
-    "/reference/release-notes",
+    "/sdk/reference/release-notes",
     latest,
     latestSeries,
     releaseNotesOlder,

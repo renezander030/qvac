@@ -50,7 +50,10 @@ async function findMdxFiles(): Promise<string[]> {
   return glob("**/*.mdx", {
     cwd: DOCS_CONTENT,
     absolute: true,
-    ignore: ["reference/api/v*.mdx", "reference/release-notes/v*.mdx"],
+    ignore: [
+      "sdk/reference/api/v*.mdx",
+      "sdk/reference/release-notes/v*.mdx",
+    ],
   });
 }
 

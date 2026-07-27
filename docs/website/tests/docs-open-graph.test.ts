@@ -23,11 +23,11 @@ describe('isArchivedPage', () => {
   });
 
   it('returns false for the latest API page (served at the bare basePath)', () => {
-    expect(isArchivedPage(page('/reference/api'))).toBe(false);
+    expect(isArchivedPage(page('/sdk/reference/api'))).toBe(false);
   });
 
   it('returns false for the latest release-notes page', () => {
-    expect(isArchivedPage(page('/reference/release-notes'))).toBe(false);
+    expect(isArchivedPage(page('/sdk/reference/release-notes'))).toBe(false);
   });
 
   it('returns true for archived per-section API series', () => {
@@ -36,9 +36,9 @@ describe('isArchivedPage', () => {
     // and cross-version hallucination in LLMs. Each minor line has one
     // archived page (`vX.Y.x`, literal `x`) under the series-versioning
     // model.
-    expect(isArchivedPage(page('/reference/api/v0.10.x'))).toBe(true);
-    expect(isArchivedPage(page('/reference/api/v0.8.x'))).toBe(true);
-    expect(isArchivedPage(page('/reference/api/v0.9.x'))).toBe(true);
+    expect(isArchivedPage(page('/sdk/reference/api/v0.10.x'))).toBe(true);
+    expect(isArchivedPage(page('/sdk/reference/api/v0.8.x'))).toBe(true);
+    expect(isArchivedPage(page('/sdk/reference/api/v0.9.x'))).toBe(true);
   });
 
   it('returns false for archived release-notes series (kept indexable)', () => {
@@ -50,9 +50,9 @@ describe('isArchivedPage', () => {
     // `isReleaseNotesPage` filter — see QVAC-21379 — not by `isArchivedPage`.
     // Per-page `.md` is likewise no longer gated by `isArchivedPage` — see
     // `src/app/llm-md-manifest.json/route.ts` for the rationale.)
-    expect(isArchivedPage(page('/reference/release-notes/v0.10.x'))).toBe(false);
-    expect(isArchivedPage(page('/reference/release-notes/v0.8.x'))).toBe(false);
-    expect(isArchivedPage(page('/reference/release-notes/v0.9.x'))).toBe(false);
+    expect(isArchivedPage(page('/sdk/reference/release-notes/v0.10.x'))).toBe(false);
+    expect(isArchivedPage(page('/sdk/reference/release-notes/v0.8.x'))).toBe(false);
+    expect(isArchivedPage(page('/sdk/reference/release-notes/v0.9.x'))).toBe(false);
   });
 
   it('returns true for legacy bundle-style URLs (defensive fallback)', () => {
@@ -73,20 +73,20 @@ describe('isArchivedVersionSlug', () => {
 
   it('returns false for non-versioned pages', () => {
     expect(isArchivedVersionSlug(['quickstart'])).toBe(false);
-    expect(isArchivedVersionSlug(['reference', 'api'])).toBe(false);
+    expect(isArchivedVersionSlug(['sdk', 'reference', 'api'])).toBe(false);
   });
 
   it('returns true for archived API summary series', () => {
-    expect(isArchivedVersionSlug(['reference', 'api', 'v0.10.x'])).toBe(true);
-    expect(isArchivedVersionSlug(['reference', 'api', 'v0.9.x'])).toBe(true);
+    expect(isArchivedVersionSlug(['sdk', 'reference', 'api', 'v0.10.x'])).toBe(true);
+    expect(isArchivedVersionSlug(['sdk', 'reference', 'api', 'v0.9.x'])).toBe(true);
   });
 
   it('returns false for archived release-notes series (kept indexable)', () => {
     expect(
-      isArchivedVersionSlug(['reference', 'release-notes', 'v0.10.x']),
+      isArchivedVersionSlug(['sdk', 'reference', 'release-notes', 'v0.10.x']),
     ).toBe(false);
     expect(
-      isArchivedVersionSlug(['reference', 'release-notes', 'v0.9.x']),
+      isArchivedVersionSlug(['sdk', 'reference', 'release-notes', 'v0.9.x']),
     ).toBe(false);
   });
 
@@ -98,25 +98,25 @@ describe('isArchivedVersionSlug', () => {
 
 describe('isReleaseNotesPage', () => {
   it('returns true for the latest release-notes page', () => {
-    expect(isReleaseNotesPage(page('/reference/release-notes'))).toBe(true);
+    expect(isReleaseNotesPage(page('/sdk/reference/release-notes'))).toBe(true);
   });
 
   it('returns true for archived release-notes series', () => {
     // These are excluded from the llms-full.txt bulk dump to reduce token
     // consumption (QVAC-21379), while staying indexed elsewhere.
-    expect(isReleaseNotesPage(page('/reference/release-notes/v0.13.x'))).toBe(true);
-    expect(isReleaseNotesPage(page('/reference/release-notes/v0.8.x'))).toBe(true);
+    expect(isReleaseNotesPage(page('/sdk/reference/release-notes/v0.13.x'))).toBe(true);
+    expect(isReleaseNotesPage(page('/sdk/reference/release-notes/v0.8.x'))).toBe(true);
   });
 
   it('returns false for non-release-notes pages', () => {
     expect(isReleaseNotesPage(page('/'))).toBe(false);
     expect(isReleaseNotesPage(page('/quickstart'))).toBe(false);
-    expect(isReleaseNotesPage(page('/reference/api'))).toBe(false);
-    expect(isReleaseNotesPage(page('/reference/api/v0.10.x'))).toBe(false);
+    expect(isReleaseNotesPage(page('/sdk/reference/api'))).toBe(false);
+    expect(isReleaseNotesPage(page('/sdk/reference/api/v0.10.x'))).toBe(false);
   });
 
   it('does not match a look-alike sibling path (prefix guard)', () => {
-    expect(isReleaseNotesPage(page('/reference/release-notes-guide'))).toBe(false);
+    expect(isReleaseNotesPage(page('/sdk/reference/release-notes-guide'))).toBe(false);
   });
 });
 
@@ -127,8 +127,8 @@ describe('buildCanonicalDocsUrl', () => {
   });
 
   it('joins slugs with `/` and appends a trailing slash', () => {
-    expect(buildCanonicalDocsUrl(['reference', 'api'])).toBe(
-      `${DOCS_SITE_ORIGIN}/reference/api/`,
+    expect(buildCanonicalDocsUrl(['sdk', 'reference', 'api'])).toBe(
+      `${DOCS_SITE_ORIGIN}/sdk/reference/api/`,
     );
   });
 
@@ -139,8 +139,8 @@ describe('buildCanonicalDocsUrl', () => {
   });
 
   it('returns the self-URL even for archived API pages (used by OG, not <link rel=canonical>)', () => {
-    expect(buildCanonicalDocsUrl(['reference', 'api', 'v0.10.x'])).toBe(
-      `${DOCS_SITE_ORIGIN}/reference/api/v0.10.x/`,
+    expect(buildCanonicalDocsUrl(['sdk', 'reference', 'api', 'v0.10.x'])).toBe(
+      `${DOCS_SITE_ORIGIN}/sdk/reference/api/v0.10.x/`,
     );
   });
 });
@@ -155,29 +155,29 @@ describe('buildPageCanonicalUrl', () => {
     expect(buildPageCanonicalUrl(['quickstart'])).toBe(
       `${DOCS_SITE_ORIGIN}/quickstart/`,
     );
-    expect(buildPageCanonicalUrl(['reference', 'api'])).toBe(
-      `${DOCS_SITE_ORIGIN}/reference/api/`,
+    expect(buildPageCanonicalUrl(['sdk', 'reference', 'api'])).toBe(
+      `${DOCS_SITE_ORIGIN}/sdk/reference/api/`,
     );
   });
 
-  it('redirects archived API pages to /reference/api/ (the section latest)', () => {
-    expect(buildPageCanonicalUrl(['reference', 'api', 'v0.10.x'])).toBe(
-      `${DOCS_SITE_ORIGIN}/reference/api/`,
+  it('redirects archived API pages to /sdk/reference/api/ (the section latest)', () => {
+    expect(buildPageCanonicalUrl(['sdk', 'reference', 'api', 'v0.10.x'])).toBe(
+      `${DOCS_SITE_ORIGIN}/sdk/reference/api/`,
     );
-    expect(buildPageCanonicalUrl(['reference', 'api', 'v0.8.x'])).toBe(
-      `${DOCS_SITE_ORIGIN}/reference/api/`,
+    expect(buildPageCanonicalUrl(['sdk', 'reference', 'api', 'v0.8.x'])).toBe(
+      `${DOCS_SITE_ORIGIN}/sdk/reference/api/`,
     );
-    expect(buildPageCanonicalUrl(['reference', 'api', 'v0.9.x'])).toBe(
-      `${DOCS_SITE_ORIGIN}/reference/api/`,
+    expect(buildPageCanonicalUrl(['sdk', 'reference', 'api', 'v0.9.x'])).toBe(
+      `${DOCS_SITE_ORIGIN}/sdk/reference/api/`,
     );
   });
 
   it('keeps archived release-notes pages as their own canonical', () => {
     expect(
-      buildPageCanonicalUrl(['reference', 'release-notes', 'v0.10.x']),
-    ).toBe(`${DOCS_SITE_ORIGIN}/reference/release-notes/v0.10.x/`);
+      buildPageCanonicalUrl(['sdk', 'reference', 'release-notes', 'v0.10.x']),
+    ).toBe(`${DOCS_SITE_ORIGIN}/sdk/reference/release-notes/v0.10.x/`);
     expect(
-      buildPageCanonicalUrl(['reference', 'release-notes', 'v0.9.x']),
-    ).toBe(`${DOCS_SITE_ORIGIN}/reference/release-notes/v0.9.x/`);
+      buildPageCanonicalUrl(['sdk', 'reference', 'release-notes', 'v0.9.x']),
+    ).toBe(`${DOCS_SITE_ORIGIN}/sdk/reference/release-notes/v0.9.x/`);
   });
 });

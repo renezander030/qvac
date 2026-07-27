@@ -32,18 +32,22 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath } from "node:url";
-import { parseVersion, seriesFileName } from "./lib/release-shared.js";
+import {
+  API_DIR,
+  RELEASE_NOTES_DIR,
+  parseVersion,
+  seriesFileName,
+} from "./lib/release-shared.js";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_WEBSITE_DIR = path.resolve(SCRIPT_DIR, "..");
+
+/** Only used to shorten the paths this script logs. */
 const CONTENT_DOCS = path.join(DOCS_WEBSITE_DIR, "content", "docs");
 
 const SECTIONS = [
-  { name: "API summary", dir: path.join(CONTENT_DOCS, "reference", "api") },
-  {
-    name: "release notes",
-    dir: path.join(CONTENT_DOCS, "reference", "release-notes"),
-  },
+  { name: "API summary", dir: API_DIR },
+  { name: "release notes", dir: RELEASE_NOTES_DIR },
 ];
 
 async function fileExists(p: string): Promise<boolean> {

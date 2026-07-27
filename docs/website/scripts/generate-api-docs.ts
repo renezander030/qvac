@@ -56,6 +56,7 @@ import { fileURLToPath } from "node:url";
 import { extractApiData } from "./api-docs/extract.js";
 import { renderApiDocs } from "./api-docs/render.js";
 import {
+  API_DIR,
   parseVersion,
   rewriteFrontmatterTitleLine,
   seriesFileName,
@@ -99,16 +100,8 @@ async function generateApiDocs(version: string, options: GenerateOptions) {
   // title never carries a precise patch number — only the minor line.
   const versionLabel = options.isLatest ? `${series} (latest)` : series;
 
-  const apiDir = path.join(
-    DOCS_WEBSITE_DIR,
-    "content",
-    "docs",
-    "reference",
-    "api",
-  );
-
   const outputFile = path.join(
-    apiDir,
+    API_DIR,
     options.target ??
       (options.isLatest ? "index.mdx" : seriesFileName(parsed.major, parsed.minor)),
   );

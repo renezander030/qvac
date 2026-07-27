@@ -22,11 +22,16 @@ export const DOCS_WEBSITE_DIR = path.resolve(SCRIPT_DIR, "..", "..");
 /**
  * Absolute path to the versioned-content root. Both `api/` and
  * `release-notes/` live directly under here.
+ *
+ * The `sdk` segment is the collection that owns this content. Every script
+ * that writes versioned pages resolves them from here, so a collection move
+ * is one edit rather than one per script.
  */
 export const CONTENT_REFERENCE = path.join(
   DOCS_WEBSITE_DIR,
   "content",
   "docs",
+  "sdk",
   "reference",
 );
 

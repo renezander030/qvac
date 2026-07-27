@@ -64,6 +64,7 @@ import {
   type OverrideSection,
 } from "./lib/changelog-parser";
 import {
+  RELEASE_NOTES_DIR,
   parseVersion,
   rewriteFrontmatterTitleLine,
   seriesFileName,
@@ -274,13 +275,7 @@ async function main() {
   const parsed = parseVersion(version);
   const series = seriesName(parsed);
   const websiteDir = process.cwd();
-  const releaseNotesDir = resolve(
-    websiteDir,
-    "content",
-    "docs",
-    "reference",
-    "release-notes",
-  );
+  const releaseNotesDir = RELEASE_NOTES_DIR;
 
   // Resolve the output target. Default falls back to the series-named
   // sibling for the version's minor — generic enough that callers don't

@@ -35,9 +35,9 @@
 
 ## 6. Path-dependent scripts
 
-- [ ] 6.1 Inventory every hardcoded content path in `scripts/` and in `src/lib/versions.ts`, especially the version-archive pages under `reference/`
-- [ ] 6.2 Update those references to the new locations
-- [ ] 6.3 Run the documentation generation pipeline and confirm it produces the same set of pages at the new paths
+- [x] 6.1 Inventory every hardcoded content path in `scripts/` and in `src/lib/versions.ts`, especially the version-archive pages under `reference/`
+- [x] 6.2 Update those references to the new locations
+- [x] 6.3 Run the documentation generation pipeline and confirm it produces the same set of pages at the new paths
 
 ## 7. URL continuity
 
