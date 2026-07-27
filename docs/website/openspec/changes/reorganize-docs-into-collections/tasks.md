@@ -20,12 +20,12 @@
 
 ## 4. Move content into collections
 
-- [ ] 4.1 Write the move mapping: every existing content path to its collection-scoped destination, as the single source for the moves and the redirects
-- [ ] 4.2 `git mv` the Platform pages: the site index becomes the collection overview, plus `about/how-it-works.mdx`, `about/vision.mdx`, `about/public-launch.mdx`, and the nine `addons/**` pages nested under the inventory
-- [ ] 4.3 `git mv` the SDK pages: `introduction.mdx` becomes the overview, plus `quickstart.mdx`, `system-requirements.mdx`, `installation.mdx`, `troubleshooting.mdx`, `cli/index.mdx`, and the `configuration/**`, `models/**`, `ai-capabilities/**`, `p2p-capabilities/**`, `runtime/**`, `tutorials/**`, `reference/api/**`, and `reference/release-notes/**` trees
-- [ ] 4.4 `git mv` the Provider pages: `cli/http-server/index.mdx`, `cli/http-server/connection.mdx`, and `cli/http-server/integration.mdx`
-- [ ] 4.5 Fill each collection's root folder as its content lands, and confirm no `.mdx` file is left directly under `content/docs`
-- [ ] 4.6 Regenerate the `.source/` registry and confirm it lists no path that no longer exists
+- [x] 4.1 Write the move mapping: every existing content path to its collection-scoped destination, as the single source for the moves and the redirects
+- [x] 4.2 `git mv` the Platform pages: the site index becomes the collection overview, plus `about/how-it-works.mdx`, `about/vision.mdx`, `about/public-launch.mdx`, and the nine `addons/**` pages nested under the inventory
+- [x] 4.3 `git mv` the SDK pages: `introduction.mdx` becomes the overview, plus `quickstart.mdx`, `system-requirements.mdx`, `installation.mdx`, `troubleshooting.mdx`, `cli/index.mdx`, and the `configuration/**`, `models/**`, `ai-capabilities/**`, `p2p-capabilities/**`, `runtime/**`, `tutorials/**`, `reference/api/**`, and `reference/release-notes/**` trees
+- [x] 4.4 `git mv` the Provider pages: `cli/http-server/index.mdx`, `cli/http-server/connection.mdx`, and `cli/http-server/integration.mdx`
+- [x] 4.5 Fill each collection's root folder as its content lands, and confirm no `.mdx` file is left directly under `content/docs`
+- [x] 4.6 Regenerate the `.source/` registry and confirm it lists no path that no longer exists
 
 ## 5. The two permitted new pages
 

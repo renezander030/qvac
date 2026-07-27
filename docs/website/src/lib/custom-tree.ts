@@ -23,15 +23,16 @@ import { SiExpo, SiElectron } from '@icons-pack/react-simple-icons';
  * among its children — otherwise the overview would be reachable from the
  * tab but not from the sidebar.
  *
- * URLs are still the pre-move ones: the content move is a later step, and
- * the collection layer works either way because the framework resolves the
- * active collection from whatever URLs the tree declares.
+ * Every URL is collection-scoped, matching where the page now lives under
+ * `content/docs/<collection>`. The framework resolves the active collection
+ * by matching the pathname against the tree, so these prefixes are what makes
+ * a page activate its own tab.
  */
 
 const platformChildren: Node[] = [
   {
     name: 'Overview',
-    url: '/',
+    url: '/platform',
     type: 'page',
     icon: resolveIcon('House'),
   },
@@ -41,7 +42,7 @@ const platformChildren: Node[] = [
   },
   {
     name: 'How it works',
-    url: '/about/how-it-works',
+    url: '/platform/about/how-it-works',
     type: 'page',
     icon: resolveIcon('Cog'),
   },
@@ -49,11 +50,11 @@ const platformChildren: Node[] = [
     name: 'Vision',
     type: 'folder',
     icon: resolveIcon('Telescope'),
-    index: { type: 'page', name: 'Vision', url: '/about/vision' },
+    index: { type: 'page', name: 'Vision', url: '/platform/about/vision' },
     children: [
       {
         name: 'Public launch',
-        url: '/about/public-launch',
+        url: '/platform/about/public-launch',
         type: 'page',
         icon: resolveIcon('Megaphone'),
       },
@@ -67,16 +68,16 @@ const platformChildren: Node[] = [
     name: 'Addons',
     type: 'folder',
     icon: resolveIcon('Blocks'),
-    index: { type: 'page', name: 'Addons', url: '/addons' },
+    index: { type: 'page', name: 'Addons', url: '/platform/addons' },
     children: [
-      { name: 'llm-llamacpp', url: '/addons/llm-llamacpp', type: 'page' },
-      { name: 'embed-llamacpp', url: '/addons/embed-llamacpp', type: 'page' },
-      { name: 'translation-nmtcpp', url: '/addons/translation-nmtcpp', type: 'page' },
-      { name: 'transcription-whispercpp', url: '/addons/transcription-whispercpp', type: 'page' },
-      { name: 'transcription-parakeet', url: '/addons/transcription-parakeet', type: 'page' },
-      { name: 'tts-ggml', url: '/addons/tts-ggml', type: 'page' },
-      { name: 'ocr-onnx', url: '/addons/ocr-onnx', type: 'page' },
-      { name: 'diffusion-cpp', url: '/addons/diffusion-cpp', type: 'page' },
+      { name: 'llm-llamacpp', url: '/platform/addons/llm-llamacpp', type: 'page' },
+      { name: 'embed-llamacpp', url: '/platform/addons/embed-llamacpp', type: 'page' },
+      { name: 'translation-nmtcpp', url: '/platform/addons/translation-nmtcpp', type: 'page' },
+      { name: 'transcription-whispercpp', url: '/platform/addons/transcription-whispercpp', type: 'page' },
+      { name: 'transcription-parakeet', url: '/platform/addons/transcription-parakeet', type: 'page' },
+      { name: 'tts-ggml', url: '/platform/addons/tts-ggml', type: 'page' },
+      { name: 'ocr-onnx', url: '/platform/addons/ocr-onnx', type: 'page' },
+      { name: 'diffusion-cpp', url: '/platform/addons/diffusion-cpp', type: 'page' },
     ],
   },
 ];
@@ -88,25 +89,25 @@ const sdkChildren: Node[] = [
   },
   {
     name: 'Overview',
-    url: '/introduction',
+    url: '/sdk',
     type: 'page',
     icon: resolveIcon('DoorOpen'),
   },
   {
     name: 'Quickstart',
-    url: '/quickstart',
+    url: '/sdk/quickstart',
     type: 'page',
     icon: resolveIcon('Rocket'),
   },
   {
     name: 'System requirements',
-    url: '/system-requirements',
+    url: '/sdk/system-requirements',
     type: 'page',
     icon: resolveIcon('Stethoscope'),
   },
   {
     name: 'Installation',
-    url: '/installation',
+    url: '/sdk/installation',
     type: 'page',
     icon: resolveIcon('Package'),
   },
@@ -114,17 +115,17 @@ const sdkChildren: Node[] = [
     name: 'Configuration',
     type: 'folder',
     icon: resolveIcon('SlidersHorizontal'),
-    index: { type: 'page', name: 'Configuration', url: '/configuration' },
+    index: { type: 'page', name: 'Configuration', url: '/sdk/configuration' },
     children: [
       {
         name: 'Plugin system',
         type: 'folder',
         icon: resolveIcon('Plug'),
-        index: { type: 'page', name: 'Plugin system', url: '/configuration/plugins' },
+        index: { type: 'page', name: 'Plugin system', url: '/sdk/configuration/plugins' },
         children: [
           {
             name: 'Write a custom plugin',
-            url: '/configuration/plugins/write-custom-plugin',
+            url: '/sdk/configuration/plugins/write-custom-plugin',
             type: 'page',
           },
         ],
@@ -133,7 +134,7 @@ const sdkChildren: Node[] = [
   },
   {
     name: 'CLI',
-    url: '/cli',
+    url: '/sdk/cli',
     type: 'page',
     icon: resolveIcon('Terminal'),
   },
@@ -143,13 +144,13 @@ const sdkChildren: Node[] = [
   },
   {
     name: 'Download lifecycle',
-    url: '/models/download-lifecycle',
+    url: '/sdk/models/download-lifecycle',
     type: 'page',
     icon: resolveIcon('Download'),
   },
   {
     name: 'Sharded models',
-    url: '/models/sharded-models',
+    url: '/sdk/models/sharded-models',
     type: 'page',
     icon: resolveIcon('Merge'),
   },
@@ -159,97 +160,97 @@ const sdkChildren: Node[] = [
   },
   {
     name: 'Text generation',
-    url: '/ai-capabilities/text-generation',
+    url: '/sdk/ai-capabilities/text-generation',
     type: 'page',
     icon: resolveIcon('MessagesSquare'),
   },
   {
     name: 'Text embeddings',
-    url: '/ai-capabilities/text-embeddings',
+    url: '/sdk/ai-capabilities/text-embeddings',
     type: 'page',
     icon: resolveIcon('Hash'),
   },
   {
     name: 'RAG',
-    url: '/ai-capabilities/rag',
+    url: '/sdk/ai-capabilities/rag',
     type: 'page',
     icon: resolveIcon('ScanSearch'),
   },
   {
     name: 'Fine-tuning',
-    url: '/ai-capabilities/fine-tuning',
+    url: '/sdk/ai-capabilities/fine-tuning',
     type: 'page',
     icon: resolveIcon('FlaskConical'),
   },
   {
     name: 'Multimodal',
-    url: '/ai-capabilities/multimodal',
+    url: '/sdk/ai-capabilities/multimodal',
     type: 'page',
     icon: resolveIcon('GalleryHorizontal'),
   },
   {
     name: 'Batch processing',
-    url: '/ai-capabilities/batch-processing',
+    url: '/sdk/ai-capabilities/batch-processing',
     type: 'page',
     icon: resolveIcon('Boxes'),
   },
   {
     name: 'Image generation',
-    url: '/ai-capabilities/image-generation',
+    url: '/sdk/ai-capabilities/image-generation',
     type: 'page',
     icon: resolveIcon('Image'),
   },
   {
     name: 'Video generation',
-    url: '/ai-capabilities/video-generation',
+    url: '/sdk/ai-capabilities/video-generation',
     type: 'page',
     icon: resolveIcon('Video'),
   },
   {
     name: 'Transcription',
-    url: '/ai-capabilities/transcription',
+    url: '/sdk/ai-capabilities/transcription',
     type: 'page',
     icon: resolveIcon('Speech'),
   },
   {
     name: 'Text-to-Speech',
-    url: '/ai-capabilities/text-to-speech',
+    url: '/sdk/ai-capabilities/text-to-speech',
     type: 'page',
     icon: resolveIcon('Volume2'),
   },
   {
     name: 'Voice assistant',
-    url: '/ai-capabilities/voice-assistant',
+    url: '/sdk/ai-capabilities/voice-assistant',
     type: 'page',
     icon: resolveIcon('Mic'),
   },
   {
     name: 'Translation',
-    url: '/ai-capabilities/translation',
+    url: '/sdk/ai-capabilities/translation',
     type: 'page',
     icon: resolveIcon('Languages'),
   },
   {
     name: 'BCI',
-    url: '/ai-capabilities/bci',
+    url: '/sdk/ai-capabilities/bci',
     type: 'page',
     icon: resolveIcon('Brain'),
   },
   {
     name: 'VLA',
-    url: '/ai-capabilities/vla',
+    url: '/sdk/ai-capabilities/vla',
     type: 'page',
     icon: resolveIcon('Eye'),
   },
   {
     name: 'OCR',
-    url: '/ai-capabilities/ocr',
+    url: '/sdk/ai-capabilities/ocr',
     type: 'page',
     icon: resolveIcon('ScanText'),
   },
   {
     name: 'Image classification',
-    url: '/ai-capabilities/image-classification',
+    url: '/sdk/ai-capabilities/image-classification',
     type: 'page',
     icon: resolveIcon('Shapes'),
   },
@@ -259,13 +260,13 @@ const sdkChildren: Node[] = [
   },
   {
     name: 'Delegated inference',
-    url: '/p2p-capabilities/delegated-inference',
+    url: '/sdk/p2p-capabilities/delegated-inference',
     type: 'page',
     icon: resolveIcon('Share2'),
   },
   {
     name: 'Blind relays',
-    url: '/p2p-capabilities/blind-relays',
+    url: '/sdk/p2p-capabilities/blind-relays',
     type: 'page',
     icon: resolveIcon('Router'),
   },
@@ -275,25 +276,25 @@ const sdkChildren: Node[] = [
   },
   {
     name: 'Cancellation',
-    url: '/runtime/cancellation',
+    url: '/sdk/runtime/cancellation',
     type: 'page',
     icon: resolveIcon('CircleStop'),
   },
   {
     name: 'Lifecycle',
-    url: '/runtime/lifecycle',
+    url: '/sdk/runtime/lifecycle',
     type: 'page',
     icon: resolveIcon('Moon'),
   },
   {
     name: 'Logging',
-    url: '/runtime/logging',
+    url: '/sdk/runtime/logging',
     type: 'page',
     icon: resolveIcon('Activity'),
   },
   {
     name: 'Profiler',
-    url: '/runtime/profiler',
+    url: '/sdk/runtime/profiler',
     type: 'page',
     icon: resolveIcon('Timer'),
   },
@@ -303,13 +304,13 @@ const sdkChildren: Node[] = [
   },
   {
     name: 'Build on Electron',
-    url: '/tutorials/electron',
+    url: '/sdk/tutorials/electron',
     type: 'page',
     icon: React.createElement(SiElectron, { className: 'h-4 w-4' }),
   },
   {
     name: 'Build on Expo',
-    url: '/tutorials/expo',
+    url: '/sdk/tutorials/expo',
     type: 'page',
     icon: React.createElement(SiExpo, { className: 'h-4 w-4' }),
   },
@@ -319,13 +320,13 @@ const sdkChildren: Node[] = [
   },
   {
     name: 'API',
-    url: '/reference/api',
+    url: '/sdk/reference/api',
     type: 'page',
     icon: resolveIcon('BookA'),
   },
   {
     name: 'Release notes',
-    url: '/reference/release-notes',
+    url: '/sdk/reference/release-notes',
     type: 'page',
     icon: resolveIcon('Tag'),
   },
@@ -335,7 +336,7 @@ const sdkChildren: Node[] = [
   },
   {
     name: 'Troubleshooting',
-    url: '/troubleshooting',
+    url: '/sdk/troubleshooting',
     type: 'page',
     icon: resolveIcon('Bug'),
   },
@@ -351,18 +352,18 @@ const sdkChildren: Node[] = [
 const providerChildren: Node[] = [
   {
     name: 'HTTP server',
-    url: '/cli/http-server',
+    url: '/provider/http-server',
     type: 'page',
     icon: resolveIcon('Server'),
   },
   {
     name: 'Connect tools',
-    url: '/cli/http-server/connection',
+    url: '/provider/http-server/connection',
     type: 'page',
   },
   {
     name: 'Integration',
-    url: '/cli/http-server/integration',
+    url: '/provider/http-server/integration',
     type: 'page',
   },
 ];
@@ -381,7 +382,7 @@ export const customTree: Node[] = [
     description: 'What QVAC is and what ships with it',
     type: 'folder',
     root: true,
-    index: { type: 'page', name: 'Overview', url: '/' },
+    index: { type: 'page', name: 'Overview', url: '/platform' },
     children: platformChildren,
   },
   {
@@ -389,7 +390,7 @@ export const customTree: Node[] = [
     description: 'Install, configure, and build with the SDK',
     type: 'folder',
     root: true,
-    index: { type: 'page', name: 'Overview', url: '/introduction' },
+    index: { type: 'page', name: 'Overview', url: '/sdk' },
     children: sdkChildren,
   },
   {
@@ -397,7 +398,7 @@ export const customTree: Node[] = [
     description: 'Run and connect the model provider server',
     type: 'folder',
     root: true,
-    index: { type: 'page', name: 'HTTP server', url: '/cli/http-server' },
+    index: { type: 'page', name: 'HTTP server', url: '/provider/http-server' },
     children: providerChildren,
   },
   {
