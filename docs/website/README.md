@@ -23,6 +23,8 @@ npm install
 npm run dev
 ```
 
+Open http://localhost:3001/platform, not the site root. Every page lives under a collection, so `/` has no page of its own: in production the CDN redirects it to the Platform overview, and the dev server never reads `public/_redirects`, so there it just 404s.
+
 ## Build
 
 Create a `.env.*` following `env.example`.
