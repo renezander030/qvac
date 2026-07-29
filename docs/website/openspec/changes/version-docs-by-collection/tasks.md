@@ -73,18 +73,18 @@
 
 ## 7. Phase 2 — Agent artifacts per line
 
-- [ ] 7.1 Remove the "View full docs dump" entry from the page actions popover in `src/components/page-actions.tsx`, and confirm no page control links `llms-full.txt`
-- [ ] 7.2 Turn the root `llms.txt` into a router naming the collections, which are versioned, and how to choose a corpus
-- [ ] 7.3 Add the collection-level `llms.txt` resolver listing the lines, marking the current one, and linking each line's file
-- [ ] 7.4 Add the line-level `llms.txt` and `llms-full.txt` routes, enumerated from the resolved lines and filtered to the line
-- [ ] 7.5 Declare in the root `llms-full.txt` which line of each versioned collection it contains
-- [ ] 7.6 Publish `/{collection}/versions.json` from the manifest, naming the tracked package and the current line
-- [ ] 7.7 Extend the per-page Markdown with build-derived metadata: collection, line, tracked package, whether the line is current, and canonical URL
-- [ ] 7.8 Add the visible statement of applicability to versioned pages, so the line survives conversion to Markdown
-- [ ] 7.9 Author the corpus protocol page for coding agents and reference it from the root `llms.txt`
-- [ ] 7.10 Add the leakage gate: every line has both artifacts, every page has Markdown, no line-scoped artifact references another line of a versioned collection, and published metadata matches the URL
-- [ ] 7.11 Resolve each artifact URL against the built page set in that same pass, since `@vahor/next-broken-links` reads only HTML and sitemaps and never opens `llms.txt`, `llms-full.txt`, `versions.json`, or the per-page Markdown
-- [ ] 7.12 Confirm the gate passes an artifact that references unversioned pages and another versioned collection at its version-less path
+- [x] 7.1 Remove the "View full docs dump" entry from the page actions popover in `src/components/page-actions.tsx`, and confirm no page control links `llms-full.txt`
+- [x] 7.2 Turn the root `llms.txt` into a router naming the collections, which are versioned, and how to choose a corpus
+- [x] 7.3 Add the collection-level `llms.txt` resolver listing the lines, marking the current one, and linking each line's file
+- [x] 7.4 Add the line-level `llms.txt` and `llms-full.txt` routes, enumerated from the resolved lines and filtered to the line
+- [x] 7.5 Declare in the root `llms-full.txt` which line of each versioned collection it contains
+- [x] 7.6 Publish `/{collection}/versions.json` from the manifest, naming the tracked package and the current line
+- [x] 7.7 Extend the per-page Markdown with build-derived metadata: collection, line, tracked package, whether the line is current, and canonical URL
+- [x] 7.8 Add the visible statement of applicability to versioned pages, so the line survives conversion to Markdown
+- [x] 7.9 Author the corpus protocol page for coding agents and reference it from the root `llms.txt`
+- [x] 7.10 Add the leakage gate: every line has both artifacts, every page has Markdown, no line-scoped artifact references another line of a versioned collection, and published metadata matches the URL
+- [x] 7.11 Resolve each artifact URL against the built page set in that same pass, since `@vahor/next-broken-links` reads only HTML and sitemaps and never opens `llms.txt`, `llms-full.txt`, `versions.json`, or the per-page Markdown
+- [x] 7.12 Confirm the gate passes an artifact that references unversioned pages and another versioned collection at its version-less path
 
 ## 8. Phase 2 — Version-scoped retrieval
 

@@ -1,7 +1,15 @@
-import { source } from '@/lib/source';
-import { getCurrentVersionOf } from '@/lib/versions';
+import {
+  CORPUS_PROTOCOL_URL,
+  currentVersionOf,
+  formatPageEntry,
+  formatSectionTitle,
+  unversionedPages,
+  versionedCollections,
+  versionsUrl,
+} from '@/lib/artifacts';
 import { collectionTabs } from '@/lib/custom-tree';
 import type { InferPageType } from 'fumadocs-core/source';
+import type { source } from '@/lib/source';
 
 // Resolves the response at build time so the result is written to
 // `out/llms.txt` as a static file under `output: 'export'`.
@@ -19,18 +27,22 @@ const ROOT_SECTION = '(root)';
 const COLLECTION_ORDER = collectionTabs.map((tab) => tab.url.slice(1));
 
 /**
- * Generates the `llms.txt` agent index at build time.
+ * Generates the root `llms.txt` at build time.
+ *
+ * It is a router, not a catalogue. A versioned collection is represented by
+ * its resolver, one fetch away, which names the lines and their indexes;
+ * listing that collection's pages here would mean either mixing two releases
+ * in one list or silently picking one for the reader. An unversioned
+ * collection has no such choice to make, so its pages are listed directly.
  *
  * Format follows the de-facto convention popularized by https://llmstxt.org/:
  * an H1 with the project name, a short paragraph describing the site, a
- * "Guidance" preamble, and one `## Section` per collection section whose body
- * is a bullet list of `- [Title](url): description` entries.
+ * "Guidance" preamble, and `## Section` headings whose body is a bullet list
+ * of `- [Title](url): description` entries.
  */
 export function GET() {
-  const pages = source
-    .getPages()
-    .sort((a, b) => a.url.localeCompare(b.url));
-
+  const collections = versionedCollections();
+  const pages = unversionedPages();
   const grouped = groupPagesBySection(pages);
 
   const lines: string[] = [
@@ -41,11 +53,19 @@ export function GET() {
     '## Guidance',
     '',
     '- To fetch one page as Markdown, append `.md` to its path (e.g. `/sdk/quickstart` → `/sdk/quickstart.md`). Alternatively, send the HTTP header `Accept: text/markdown` and any page URL will be redirected to its Markdown variant.',
-    '- To obtain a dump with all documentation, fetch `/llms-full.txt`.',
     '- When citing sources to users, use the canonical URL without `.md` (e.g. `/sdk/quickstart`), not the Markdown variant.',
-    `- Latest SDK version: ${getCurrentVersionOf('/sdk')}`,
-    `- Total pages: ${pages.length}`,
+    `- Some collections are versioned: they publish one documentation line per release, and each line has its own page index and its own full-text corpus. Resolve the line that matches the release you are working against before reading anything else. How to do that: ${CORPUS_PROTOCOL_URL}`,
+    '- To obtain a dump of everything at once, fetch `/llms-full.txt`. It carries the unversioned collections and the current line of each versioned one.',
+    '',
+    '## Versioned collections',
+    '',
   ];
+
+  for (const { software, path, lines: published } of collections) {
+    lines.push(
+      `- ${titleOf(path)} — tracks \`${software.package}\`, current line ${currentVersionOf(software)}, ${published.length} lines published. Resolver: ${path}/llms.txt. Machine-readable: ${versionsUrl(path)}`,
+    );
+  }
 
   for (const section of Object.keys(grouped).sort(compareSections)) {
     lines.push('', `## ${formatSectionTitle(section)}`, '');
@@ -57,11 +77,16 @@ export function GET() {
   return new Response(lines.join('\n') + '\n');
 }
 
+/** The collection bar's name for a path, falling back to the path itself. */
+function titleOf(path: string): string {
+  return collectionTabs.find((tab) => tab.url === path)?.title ?? path;
+}
+
 /**
  * Groups by collection and then by the section within it, so a heading reads
- * `SDK / AI Capabilities`. Grouping by the first slug alone would put all 53
- * SDK pages under one heading, since the collection now occupies the slot the
- * section used to.
+ * `Platform / Addons`. Grouping by the first slug alone would put every page
+ * of a collection under one heading, since the collection occupies the slot
+ * the section used to.
  */
 function groupPagesBySection(pages: Page[]): Record<string, Page[]> {
   const initial: Record<string, Page[]> = {};
@@ -76,8 +101,8 @@ function groupPagesBySection(pages: Page[]): Record<string, Page[]> {
   }
 
   // A section holding a single page directly under its collection (say
-  // `/sdk/quickstart`) folds into the collection's own heading, rather than
-  // spawning a one-entry section of its own.
+  // `/resources/overview`) folds into the collection's own heading, rather
+  // than spawning a one-entry section of its own.
   const collapsed: Record<string, Page[]> = {};
   for (const [key, list] of Object.entries(initial)) {
     if (list.length === 1 && list[0].slugs.length === 2) {
@@ -111,31 +136,4 @@ function compareSections(a: string, b: string): number {
   if (!aSection) return -1;
   if (!bSection) return 1;
   return aSection.localeCompare(bSection);
-}
-
-/** Initialisms the `<= 3` rule below is too short to catch. */
-const INITIALISMS = new Set(['http']);
-
-function formatSectionTitle(key: string): string {
-  if (key === ROOT_SECTION) return 'Overview';
-  return key
-    .split('/')
-    .map((part) =>
-      part
-        .split('-')
-        .map((word) =>
-          word.length <= 3 || INITIALISMS.has(word)
-            ? word.toUpperCase()
-            : word.charAt(0).toUpperCase() + word.slice(1),
-        )
-        .join(' '),
-    )
-    .join(' / ');
-}
-
-function formatPageEntry(page: Page): string {
-  const title = page.data.title;
-  const description = page.data.description?.trim();
-  const base = `- [${title}](${page.url})`;
-  return description ? `${base}: ${description}` : base;
 }

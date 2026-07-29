@@ -1,0 +1,76 @@
+---
+title: Corpus protocol
+icon: Bot
+description: How a coding agent picks the documentation matching the release a project has installed.
+schemaType: TechArticle
+---
+
+## Overview
+
+Some collections on this site are published as **documentation lines**: one
+complete copy of the documentation per release. The SDK and the Provider each
+publish two. A line is self-contained — its pages link only to each other — so
+reading the wrong line yields answers that are internally consistent and wrong
+for the project in front of you.
+
+This page is the procedure for choosing the right one. It is written for
+coding agents; a human can use the version switcher at the top of the sidebar
+instead.
+
+## Procedure
+
+1. **Read the installed version.** Take it from the project itself, not from
+   this site: `package.json` and the lockfile for `@qvac/sdk` or `@qvac/cli`,
+   `pyproject.toml` for the Python client. Keep the major and minor, discard
+   the patch: `0.16.3` becomes `v0.16`.
+2. **List the lines.** Fetch `/{collection}/versions.json`, for example
+   `/sdk/versions.json`. It names the package the collection tracks and every
+   line published, marking which one is current.
+3. **Resolve the line.** Take the entry whose `version` equals the major and
+   minor you read in step 1.
+4. **Read that line.** Its `index` is a page list; its `corpus` is the full
+   text of the line in one fetch. Both are named in `versions.json`, and both
+   are reachable by hand: the index of a line is always
+   `/{collection}/v{major}.{minor}/llms.txt`.
+5. **Cite the page URL.** Answers should cite the URL a human can open, which
+   for the current line carries no version segment and for any other line
+   carries its own.
+
+## When no line matches
+
+Only the last two releases are published, so a project pinned further back
+will find no matching line.
+
+- Use the **nearest older line** — the highest published version below the
+  installed one.
+- **Say so.** State in your answer which line you read and which release the
+  project has, so the reader can judge the gap themselves.
+- Never fall forward to a newer line silently. A newer line describes
+  behaviour the installed release may not have.
+
+## Artifacts
+
+Every artifact below is plain text, generated at build time.
+
+| Artifact | Where | What it holds |
+| --- | --- | --- |
+| Root router | `/llms.txt` | The collections, and where to resolve the versioned ones |
+| Line resolver | `/{collection}/llms.txt` | The lines of one collection, and where each one's index and corpus are |
+| Machine-readable lines | `/{collection}/versions.json` | The same, as JSON |
+| Line index | `/{collection}/v{major}.{minor}/llms.txt` | Every page of one line |
+| Line corpus | Named in the resolver | The full text of one line |
+| Site corpus | `/llms-full.txt` | The unversioned collections plus the current line of each versioned one |
+| Page as Markdown | Any page URL with `.md` appended | One page, with its collection, line, and tracked package stated in the front matter |
+
+Sending `Accept: text/markdown` with a page request redirects to the Markdown
+variant, so content negotiation works without rewriting URLs.
+
+## Rules
+
+- **Do not mix lines.** Never combine text from two lines of the same
+  collection in one answer. Their APIs differ; that is why they are separate.
+- **Referencing another collection is fine.** The SDK and the Provider are
+  versioned independently, and each is cited at its own resolved line.
+- **Prefer the corpus of one line over the site corpus** when the question is
+  about a specific release. The site corpus carries only the current line of
+  each versioned collection.

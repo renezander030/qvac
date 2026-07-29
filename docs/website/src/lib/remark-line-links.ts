@@ -1,10 +1,6 @@
 // Relative, not aliased: this module is part of `source.config.ts`'s import
 // graph, which the MDX config loader resolves outside the Next path aliases.
-import {
-  getDocumentedSoftware,
-  isCurrentLineFolder,
-  type DocumentedSoftware,
-} from './versions'
+import { versionOfFile } from './content-line'
 
 /**
  * Resolves an internal link into the documentation line of the page that
@@ -45,32 +41,15 @@ interface Line {
   segment: string
 }
 
-const CONTENT_ROOT = 'content/docs/'
-
 /**
  * The line a content file belongs to, or null when its links need no
  * resolution — the file is outside a versioned collection, or it belongs to
  * the current line, whose pages already answer the version-less paths.
  */
 export function lineOfFile(filePath: string): Line | null {
-  const normalized = filePath.replaceAll('\\', '/')
-  const at = normalized.lastIndexOf(CONTENT_ROOT)
-  if (at === -1) return null
-
-  const [collection, folder] = normalized
-    .slice(at + CONTENT_ROOT.length)
-    .split('/')
-  if (!collection || !folder) return null
-
-  const software: DocumentedSoftware | null = getDocumentedSoftware(
-    `/${collection}`,
-  )
-  if (!software || software.kind !== 'collection') return null
-
-  const version = software.versions.find((entry) => entry.folder === folder)
-  if (!version || isCurrentLineFolder(version.folder)) return null
-
-  return { collection, segment: version.version }
+  const line = versionOfFile(filePath)
+  if (!line || line.current) return null
+  return { collection: line.collection, segment: line.version.version }
 }
 
 /**

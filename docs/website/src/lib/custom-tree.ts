@@ -116,9 +116,9 @@ const providerChildren: Node[] = [
 ];
 
 /**
- * Resources holds a single page, its index. The collection exists as a
- * destination for material published outside the docs site, so until that
- * material is indexed here there is nothing else to list.
+ * Resources indexes material about using QVAC that is not the reference
+ * documentation itself: what is published outside this site, and how to
+ * consume this site programmatically.
  */
 const resourcesChildren: Node[] = [
   {
@@ -126,6 +126,12 @@ const resourcesChildren: Node[] = [
     url: '/resources',
     type: 'page',
     icon: resolveIcon('DoorOpen'),
+  },
+  {
+    name: 'Corpus protocol',
+    url: '/resources/corpus-protocol',
+    type: 'page',
+    icon: resolveIcon('Bot'),
   },
 ];
 
