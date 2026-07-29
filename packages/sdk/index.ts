@@ -97,6 +97,10 @@ export {
   type TextToSpeechStreamSession,
   type TextToSpeechStreamResponse,
   type TextToSpeechStreamClientParams,
+  type TtsClientParamsInput,
+  type TtsParlerEmotion,
+  type TtsParlerLoadConfig,
+  type TtsParlerRuntimeConfig,
   type CompletionParams,
   type ToolDialect,
   type RagSearchResult,
@@ -211,7 +215,8 @@ export {
   ContextOverflowError,
   RequestIdConflictError,
   RequestNotFoundError,
-  RequestRejectedByPolicyError
+  RequestRejectedByPolicyError,
+  TranslationFailedError
 } from './utils/errors-server'
 
 // `WorkerCrashedError` and `WorkerShutdownError` are thrown by the
