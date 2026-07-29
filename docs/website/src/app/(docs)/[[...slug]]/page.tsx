@@ -18,6 +18,7 @@ import {
   buildCanonicalDocsUrl,
 } from '@/lib/docs-open-graph';
 import { buildDocsJsonLd } from '@/lib/docs-json-ld';
+import { inkeepMetaTags } from '@/lib/page-attributes';
 import { QVAC_DOC_OG_HEIGHT, QVAC_DOC_OG_WIDTH } from '@/lib/qvac-doc-og';
 
 function TitleText({
@@ -174,5 +175,10 @@ export async function generateMetadata(
       description: description ?? undefined,
       images: [ogImage.url],
     },
+    // What the search index filters on. Inkeep's crawler reads `inkeep:`
+    // meta tags off the page and turns them into record attributes, which is
+    // the only way a current-line page can declare the release it documents:
+    // its URL carries no version segment to infer one from.
+    other: inkeepMetaTags(page.url),
   };
 }

@@ -22,9 +22,14 @@
  *     artifacts are invisible to it both as sources and as targets, so their
  *     URLs are resolved here instead — in the pass that is already reading
  *     them line by line.
- *   - **Agreement** — the metadata a page's Markdown states matches where the
- *     page is served from. It is derived at build time, so a mismatch means
- *     the derivation is wrong, not that a page is stale.
+ *   - **Agreement** — the metadata a page publishes matches where the page is
+ *     served from, in both places it appears: the front matter of its
+ *     Markdown, and the `inkeep:` meta tags the search index reads. It is
+ *     derived at build time, so a mismatch means the derivation is wrong, not
+ *     that a page is stale. The meta tags are worth checking on their own,
+ *     because retrieval is filtered on them: a page whose line is wrong there
+ *     is answered to readers of another release, and nothing on the page
+ *     shows it.
  *
  * A line the manifest declares but whose content was never cut is skipped,
  * with a note: `tests/line-structure.test.ts` is what fails on that, and
@@ -197,6 +202,30 @@ function frontMatter(text: string): Record<string, string> {
   return fields;
 }
 
+/**
+ * The same claims as they appear in a built page: the canonical link and the
+ * `inkeep:` meta tags, read into the field names the Markdown uses so one
+ * comparison serves both surfaces. Attributes are matched individually rather
+ * than as a fixed pattern, since their order in the tag is not ours to fix.
+ */
+function publishedAttributes(html: string): Record<string, string> {
+  const fields: Record<string, string> = {};
+
+  for (const [tag] of html.matchAll(/<link\b[^>]*>/g)) {
+    if (!/\brel="canonical"/.test(tag)) continue;
+    const href = /\bhref="([^"]*)"/.exec(tag);
+    if (href) fields.canonical = href[1];
+  }
+
+  for (const [tag] of html.matchAll(/<meta\b[^>]*>/g)) {
+    const name = /\bname="inkeep:([^"]+)"/.exec(tag);
+    const content = /\bcontent="([^"]*)"/.exec(tag);
+    if (name && content) fields[name[1]] = content[1];
+  }
+
+  return fields;
+}
+
 /** What a page's Markdown must state, given only where the page is served. */
 function metadataProblems(
   url: string,
@@ -307,9 +336,15 @@ async function main() {
     }
   }
 
-  // Every page's Markdown twin: that it exists, and that what it states about
-  // where it comes from matches where it is served.
+  // Every page: that it publishes the right line to the search index, that
+  // its Markdown twin exists, and that what the twin states about where it
+  // comes from matches where it is served.
   for (const url of pages) {
+    const html = await fs.readFile(path.join(OUT_DIR, url, 'index.html'), 'utf-8');
+    for (const problem of metadataProblems(url, publishedAttributes(html), collections)) {
+      problems.push(`${url} meta ${problem}`);
+    }
+
     const file = path.join(OUT_DIR, `${url}.md`);
     let text: string;
     try {
@@ -347,7 +382,7 @@ async function main() {
   }
 
   console.log(
-    `Agent artifacts check passed: ${found.length} artifacts, ${pages.length} Markdown twins, ${checkedUrls} URLs resolved and scoped`,
+    `Agent artifacts check passed: ${found.length} artifacts, ${pages.length} pages with matching metadata and Markdown twins, ${checkedUrls} URLs resolved and scoped`,
   );
 }
 

@@ -21,7 +21,7 @@ Each page SHALL publish the attributes retrieval filters on: its collection, its
 
 ### Requirement: Search and the assistant are scoped to the reader's line
 
-While a reader is inside a documentation line, Search and the AI Assistant SHALL restrict retrieval to that line plus the unversioned collections. Both surfaces MUST send the restriction as an attribute filter on the request, so it is enforced by retrieval and not by ranking.
+While a reader is inside a documentation line, Search and the AI Assistant SHALL restrict retrieval to that line, the unversioned collections, and the current line of every other versioned collection. No other line of the reader's own collection may be retrieved. Both surfaces MUST send the restriction as an attribute filter on the request, so it is enforced by retrieval and not by ranking.
 
 #### Scenario: Search is filtered to the active line
 
@@ -32,12 +32,17 @@ While a reader is inside a documentation line, Search and the AI Assistant SHALL
 #### Scenario: The assistant answers inside the line
 
 - **WHEN** the reader asks the assistant a question from an SDK `v0.16` page
-- **THEN** the request carries the same restriction, and the answer cites only that line and unversioned pages
+- **THEN** the request carries the same restriction, and the answer cites no other SDK line
 
 #### Scenario: Unversioned content stays reachable
 
 - **WHEN** a filtered query matches a Platform or Resources page
 - **THEN** the page is returned
+
+#### Scenario: Another versioned collection is reachable at its current line
+
+- **WHEN** a reader on an SDK `v0.16` page searches for something the Provider documents
+- **THEN** the Provider's current line is returned, and no older Provider line is
 
 #### Scenario: An assistant request path that cannot carry the filter is not shipped
 

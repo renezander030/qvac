@@ -1,7 +1,6 @@
 import { source } from '@/lib/source';
 import { buildCanonicalDocsUrl } from '@/lib/docs-open-graph';
-import { collectionTabs } from '@/lib/custom-tree';
-import { getVersionForPath, isCurrentLineFolder } from '@/lib/versions';
+import { pageAttributes } from '@/lib/page-attributes';
 import type { InferPageType } from 'fumadocs-core/source';
 
 /**
@@ -33,23 +32,11 @@ function frontMatter(page: InferPageType<typeof source>): string[] {
     `canonical: ${buildCanonicalDocsUrl(page.slugs)}`,
   ];
 
-  const collection = collectionTabs.find(
-    (tab) => page.url === tab.url || page.url.startsWith(`${tab.url}/`),
-  );
-  if (collection) fields.push(`collection: ${JSON.stringify(collection.title)}`);
-
-  // Only a collection published as documentation lines states one. An
-  // inventory package under Platform carries versions of its own, but those
-  // are releases of a package catalogued page by page, not lines of
-  // documentation, and an agent must not read them as such.
-  const versioned = getVersionForPath(page.url);
-  if (versioned && versioned.software.kind === 'collection') {
-    fields.push(
-      `package: ${JSON.stringify(versioned.software.package)}`,
-      `line: ${versioned.version.version}`,
-      `current_line: ${isCurrentLineFolder(versioned.version.folder)}`,
-    );
-  }
+  const { collection, package: pkg, line, currentLine } = pageAttributes(page.url);
+  if (collection) fields.push(`collection: ${JSON.stringify(collection)}`);
+  if (pkg) fields.push(`package: ${JSON.stringify(pkg)}`);
+  if (line) fields.push(`line: ${line}`);
+  if (currentLine !== undefined) fields.push(`current_line: ${currentLine}`);
 
   return fields;
 }

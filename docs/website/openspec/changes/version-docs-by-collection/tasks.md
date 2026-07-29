@@ -88,12 +88,12 @@
 
 ## 8. Phase 2 — Version-scoped retrieval
 
-- [ ] 8.1 Confirm whether the AI Assistant's request path in `src/components/ask-ai/use-ask-ai-chat.tsx` can carry Inkeep attribute filters, and record the finding in `design.md` before building on it
-- [ ] 8.2 Emit per-page Inkeep attributes for collection, line, and whether the line is current, derived from the route rather than from the URL shape
-- [ ] 8.3 Pass the attribute filter from the search modal when the reader is inside a line
-- [ ] 8.4 Pass the same filter from the assistant, or record the limitation and leave it unscoped if its request path cannot carry one
-- [ ] 8.5 Implement the unscoped-query policy favouring the current line and the unversioned collections, labelling older-line results
-- [ ] 8.6 Add the metadata-matches-route gate and the cross-line retrieval tests that measure leakage
+- [x] 8.1 Confirm whether the AI Assistant's request path in `src/components/ask-ai/use-ask-ai-chat.tsx` can carry Inkeep attribute filters, and record the finding in `design.md` before building on it
+- [x] 8.2 Emit per-page Inkeep attributes for collection, line, and whether the line is current, derived from the route rather than from the URL shape
+- [x] 8.3 Pass the attribute filter from the search modal when the reader is inside a line
+- [x] 8.4 Pass the same filter from the assistant, or record the limitation and leave it unscoped if its request path cannot carry one
+- [x] 8.5 Implement the unscoped-query policy favouring the current line and the unversioned collections, labelling older-line results
+- [x] 8.6 Add the metadata-matches-route gate and the cross-line retrieval tests that measure leakage
 
 ## 9. Phase 3 — Provider
 
