@@ -34,6 +34,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath } from "node:url";
 import { API_DIR, RELEASE_NOTES_DIR } from "./lib/release-shared.js";
+import { refuseRetiredScript } from "./lib/retired.js";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_WEBSITE_DIR = path.resolve(SCRIPT_DIR, "..");
@@ -328,6 +329,8 @@ export function getVersionSelectorProps(
   await fs.writeFile(versionsFile, content, "utf-8");
   console.log(`✅ Updated ${versionsFile}`);
 }
+
+refuseRetiredScript("update-versions-list.ts");
 
 const args = process.argv.slice(2);
 

@@ -180,13 +180,11 @@ wrapping workflow does that. See
 
 ### Updating the Versions List
 
-After generating docs, refresh `src/lib/versions.ts` from disk:
+Nothing to run: `src/lib/versions.ts` is a hand-edited manifest. It declares every documented software, the package it is, where it is documented, and the versions published for it — a version recording its number and the folder holding it.
 
-```bash
-bun run scripts/update-versions-list.ts [--latest=X.Y.Z]
-```
+Publishing a version is two edits in one diff: the folder under `content/docs/`, and the entry in that file. `tests/line-structure.test.ts` fails the build when the two disagree, naming the version at fault.
 
-This walks `content/docs/sdk/reference/api/` and `content/docs/sdk/reference/release-notes/` for `vX.Y.x.mdx` siblings (series-named) and rebuilds the section manifests (`API_SECTION`, `RELEASE_NOTES_SECTION`). The optional `--latest=X.Y.Z` flag overrides which precise patch is recorded as `section.latest` (used for the page title's latest-patch range); the selector itself only shows series labels (`v0.11.x (latest)`, `v0.10.x`, ...). Defaults to the SDK's `package.json` version when `--latest` is omitted.
+`scripts/update-versions-list.ts`, which used to regenerate this file from disk, is retired. It is kept for reference and refuses to run.
 
 ### Full Generation (Orchestrated)
 
@@ -196,11 +194,13 @@ When running inside the monorepo, use the orchestrator script that reads the SDK
 bun run docs:generate
 ```
 
-This runs `generate-api-docs.ts --latest` followed by `update-versions-list.ts` in sequence — useful for previewing a regen against the current SDK without bumping the latest pointer.
+This runs `generate-api-docs.ts --latest` — useful for previewing a regen against the current SDK without bumping the latest pointer. It no longer refreshes the version list, which is hand-edited.
 
 ---
 
 ## Versioning
+
+> **Being superseded.** What follows describes the patch-series scheme, where a version is a `vX.Y.x.mdx` sibling of the API summary and the release notes. Versioning is becoming a property of a collection: a documentation line, one folder under the collection holding a complete page tree, declared in the manifest at `src/lib/versions.ts`. The tooling that maintained the patch series — `update-versions-list.ts`, `create-version-bundle.ts`, and the `release-version-*` orchestrators — is retired and refuses to run. This section is accurate for what the site serves today and is rewritten when the lines land.
 
 Only the API summary and release notes are versioned. Every other content surface (about-qvac, getting-started, examples, tutorials, addons, cli, http-server, home) lives at a single bare path that always reflects the current SDK.
 
@@ -432,17 +432,17 @@ All scripts live in `docs/website/scripts/` and are designed to run with Bun.
 
 | Script | npm alias | Description |
 |---|---|---|
-| `release-version.ts` | `docs:release-version` | Unified release dispatcher: parses the version and forwards to the minor or patch orchestrator. Called by the `qv-sdk-changelog` skill (Step 8) during release prep. |
-| `release-version-minor.ts` | -- | Minor (X.Y.0) orchestrator: freeze outgoing series → generate new latest from per-package `CHANGELOG_LLM.md` → refresh `versions.ts`. Importable from `release-version.ts`. |
-| `release-version-patch.ts` | -- | Patch (X.Y.Z, Z>=1) orchestrator: insert `## v<X.Y.Z>` after the existing minor block on the appropriate series page. Never touches the API summary. Importable from `release-version.ts`. |
+| `release-version.ts` | -- | **Retired**, kept for reference. Was the release dispatcher forwarding to the minor or patch orchestrator. |
+| `release-version-minor.ts` | -- | **Retired**, kept for reference. Was the minor (X.Y.0) orchestrator: freeze outgoing series → generate new latest → refresh `versions.ts`. |
+| `release-version-patch.ts` | -- | **Retired**, kept for reference. Was the patch (X.Y.Z, Z>=1) orchestrator, inserting `## v<X.Y.Z>` after the existing minor block. |
 | `generate-api-docs.ts` | `docs:generate-api` | Renders one minor series' API summary MDX. `--title-only` rewrites only the frontmatter title (called from the minor freeze flow); `--target=<file>` overrides the output filename. |
 | `api-docs/extract.ts` | -- | Phase 1: TypeDoc analysis, writes `api-data.json` |
 | `api-docs/render.ts` | -- | Phase 2: Nunjucks rendering of `single-page.njk` from `api-data.json` |
 | `api-docs/audit-tsdoc.ts` | `docs:audit-tsdoc` | TSDoc completeness audit (standalone or via extraction) |
 | `generate-release-notes.ts` | `docs:generate-release-notes` | Generates / augments the release-notes series MDX. Default mode renders the page from scratch with a `## v<X.Y.0>` block; `--append-patch` inserts a `## v<X.Y.Z>` block directly after the minor; `--title-only` relabels the frontmatter title only. |
-| `update-versions-list.ts` | `docs:update-versions` | Rebuilds `src/lib/versions.ts` from `reference/api/v*.x.mdx` and `reference/release-notes/v*.x.mdx` siblings on disk. `--latest=X.Y.Z` records the precise patch in `latest` (the selector still labels series-only). |
-| `run-docs-generate.ts` | `docs:generate` | Convenience: regenerates the latest summary + refreshes `versions.ts` using the monorepo SDK's `package.json` version (no version bump) |
-| `create-version-bundle.ts` | `docs:create-version` | Copies the current `index.mdx` of each versioned section to `v<X.Y>.x.mdx` (called from `release-version-minor.ts`) |
+| `update-versions-list.ts` | -- | **Retired**, kept for reference. Rebuilt `src/lib/versions.ts` from the series siblings on disk; that file is now hand-edited. |
+| `run-docs-generate.ts` | `docs:generate` | Convenience: regenerates the latest API summary using the monorepo SDK's `package.json` version (no version bump) |
+| `create-version-bundle.ts` | -- | **Retired**, kept for reference. Copied the current `index.mdx` of each versioned section to `v<X.Y>.x.mdx`. |
 | `lib/release-shared.ts` | -- | Shared helpers for the release orchestrators (version parsing, `versions.ts` reader, series-sibling resolver, series-name helpers) |
 | `lib/changelog-parser.ts` | -- | Changelog parsing — `readChangelogLLMVerbatim` for the verbatim per-package render plus legacy `parseChangelog` / `parseChangelogFolder` / `mergeChangelogs` exports kept for unit-test fixtures and ad-hoc tooling |
 | `lib/link-validator.ts` | -- | Internal link extraction + resolution (used by the link-integrity test) |
@@ -515,9 +515,9 @@ No API functions extracted. Check that:
 Version vX.Y.Z was not found
 ```
 
-**Cause:** `update-versions-list.ts` ran but the version's MDX file doesn't exist on disk.
+**Cause:** a version is recorded but its MDX file doesn't exist on disk. Only reachable through the retired release tooling; the equivalent failure today is `tests/line-structure.test.ts` reporting a declared version whose folder is missing.
 
-**Fix:** Run `docs:generate-api -- <version> --latest` (writes `index.mdx`) or `docs:generate-api -- <version>` (writes `vX.Y.Z.mdx`) first, then `docs:update-versions`. For a full release flow use `docs:release-version -- <version>` (auto-detects minor vs patch) instead.
+**Fix:** Run `docs:generate-api -- <version> --latest` (writes `index.mdx`) to produce the missing page. For a version declared in `src/lib/versions.ts`, create the folder the entry names, or drop the entry.
 
 ### Build fails in CI (PR checks)
 

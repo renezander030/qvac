@@ -36,6 +36,7 @@ import {
   seriesFileName,
 } from "./lib/release-shared.js";
 import * as path from "path";
+import { refuseRetiredScript } from "./lib/retired.js";
 
 export async function releasePatch(newVersion: string) {
   const parsed = parseVersion(newVersion);
@@ -159,6 +160,8 @@ if (import.meta.main) {
     );
     process.exit(versionArg ? 0 : 1);
   }
+
+  refuseRetiredScript("release-version-patch.ts");
 
   releasePatch(versionArg).catch((err) => {
     console.error(`❌ Release (patch) failed: ${err.message}`);

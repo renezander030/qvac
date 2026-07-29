@@ -38,6 +38,7 @@ import {
   parseVersion,
   seriesFileName,
 } from "./lib/release-shared.js";
+import { refuseRetiredScript } from "./lib/retired.js";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_WEBSITE_DIR = path.resolve(SCRIPT_DIR, "..");
@@ -120,6 +121,8 @@ if (!versionArg || args.includes("--help") || args.includes("-h")) {
   console.log("  --force   Overwrite existing snapshots if present.");
   process.exit(versionArg ? 0 : 1);
 }
+
+refuseRetiredScript("create-version-bundle.ts");
 
 createVersionBundle(versionArg, force).catch((err) => {
   console.error(`❌ Error: ${err.message}`);
