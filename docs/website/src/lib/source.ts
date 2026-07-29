@@ -1,7 +1,16 @@
 import { docs } from 'fumadocs-mdx:collections/server';
 import { loader, type InferPageType } from 'fumadocs-core/source';
 import { icons } from 'lucide-react';
+import { SiElectron, SiExpo } from '@icons-pack/react-simple-icons';
 import { createElement } from 'react';
+
+/**
+ * Brand icons the tree names, beyond Lucide's set. They are listed here
+ * because an icon reaches the tree as a string — written in a page's
+ * frontmatter, a `meta.json`, or a separator — and this resolver is the one
+ * place that turns such a string into an element.
+ */
+const brandIcons = { SiElectron, SiExpo };
 
 // See https://fumadocs.vercel.app/docs/headless/source-api for more info
 export const source = loader({
@@ -13,7 +22,31 @@ export const source = loader({
       // You may set a default icon
       return;
     }
+    if (icon in brandIcons) {
+      return createElement(brandIcons[icon as keyof typeof brandIcons], {
+        className: 'h-4 w-4',
+      });
+    }
     if (icon in icons) return createElement(icons[icon as keyof typeof icons]);
+  },
+  pageTree: {
+    transformers: [
+      {
+        /**
+         * Apply `sidebarTitle`, so a page can read one way in the sidebar and
+         * another as a page. Without it the two are the same string, and the
+         * label a documentation line declares in its `meta.json` could only be
+         * changed by retitling the page.
+         */
+        file(node, filePath) {
+          if (!filePath) return node;
+          const file = this.storage.read(filePath);
+          if (file?.format !== 'page') return node;
+          const { sidebarTitle } = file.data;
+          return sidebarTitle ? { ...node, name: sidebarTitle } : node;
+        },
+      },
+    ],
   },
 });
 

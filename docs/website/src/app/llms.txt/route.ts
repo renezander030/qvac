@@ -1,7 +1,7 @@
 import { source } from '@/lib/source';
 import { LATEST_VERSION } from '@/lib/versions';
 import { isArchivedPage } from '@/lib/docs-open-graph';
-import { customTree } from '@/lib/custom-tree';
+import { collectionTabs } from '@/lib/custom-tree';
 import type { InferPageType } from 'fumadocs-core/source';
 
 // Resolves the response at build time so the result is written to
@@ -15,11 +15,9 @@ const ROOT_SECTION = '(root)';
 
 /**
  * The collections in the order the collection bar lists them, read from the
- * same tree that renders the bar so the two never drift apart.
+ * entries that render the bar so the two never drift apart.
  */
-const COLLECTION_ORDER = customTree.flatMap((node) =>
-  node.type === 'folder' && node.index?.url ? [node.index.url.slice(1)] : [],
-);
+const COLLECTION_ORDER = collectionTabs.map((tab) => tab.url.slice(1));
 
 /**
  * Generates the `llms.txt` agent index at build time.

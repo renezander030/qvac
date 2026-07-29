@@ -22,18 +22,19 @@
 
 ## 3. Phase 1 — Navigation declared per line
 
-- [ ] 3.1 Add the two `@icons-pack/react-simple-icons` entries the SDK tree uses to the `icon` resolver in `src/lib/source.ts`, so a `meta.json` can name them
-- [ ] 3.2 Convert the SDK subtree of `src/lib/custom-tree.ts` into `meta.json` files, one per directory of the line, preserving its current order, separators, titles, and icons
-- [ ] 3.3 Add the helper that reads a line's subtree out of `source.pageTree` by folder path and returns its children
-- [ ] 3.4 Replace the SDK's hand-written subtree with one `root: true` folder per line whose children come from that helper, and confirm no page falls outside every root
-- [ ] 3.5 Keep `collectionTabs` listing exactly four entries, each pointing at its collection's current line, now that a versioned collection contributes more than one root
-- [ ] 3.6 Replace `archivedVersionsTree`, whose per-line root is what this supersedes
-- [ ] 3.7 Extend `tests/sidebar-consistency.test.ts` over the composed tree, covering both the declared and the derived parts, and confirm a `meta.json` naming a missing page fails it
-- [ ] 3.8 Confirm the check no longer treats a page present in one line and absent from another as a failure
+- [x] 3.1 Add the two `@icons-pack/react-simple-icons` entries the SDK tree uses to the `icon` resolver in `src/lib/source.ts`, so a `meta.json` can name them
+- [x] 3.2 Convert the SDK subtree of `src/lib/custom-tree.ts` into `meta.json` files, one per directory of the line, preserving its current order, separators, titles, and icons
+- [x] 3.3 Add the helper that reads a line's subtree out of `source.pageTree` by folder path and returns its children
+- [x] 3.4 Replace the SDK's hand-written subtree with one `root: true` folder per line whose children come from that helper, and confirm no page falls outside every root
+- [x] 3.5 Keep `collectionTabs` listing exactly four entries, each pointing at its collection's current line, now that a versioned collection contributes more than one root
+- [x] 3.6 Replace `archivedVersionsTree`, whose per-line root is what this supersedes
+- [x] 3.7 Extend `tests/sidebar-consistency.test.ts` over the composed tree, covering both the declared and the derived parts, and confirm a `meta.json` naming a missing page fails it
+- [x] 3.8 Confirm the check no longer treats a page present in one line and absent from another as a failure
 
 ## 4. Phase 1 — Cut the SDK's first two lines
 
 - [ ] 4.1 Move the sixteen `reference/api/v*.mdx` and `reference/release-notes/v*.mdx` files to `content/_unpublished/`, keeping only both `index.mdx`
+- [ ] 4.1b Flatten each surviving `index.mdx` up to `reference/api.mdx` and `reference/release-notes.mdx`, so the entry is a page and not a folder holding one, and confirm both URLs are unchanged
 - [ ] 4.2 `git mv` every SDK page into `content/docs/sdk/v0.16/`, keeping what the site serves today, and confirm no `.mdx` file is left directly under `content/docs/sdk`
 - [ ] 4.3 Copy `v0.16` to `(v0.17)` verbatim, `meta.json` files included, and confirm the two trees are identical before any release edit
 - [ ] 4.4 Point the SDK's manifest entries at the folders as cut, then delete one entry and confirm the correspondence check fails before restoring it

@@ -1,26 +1,17 @@
 import type { Node, Root } from 'fumadocs-core/page-tree';
 import {
-  API_SECTION,
-  RELEASE_NOTES_SECTION,
-  type VersionedSection,
+  computeSectionVersionUrl,
+  getCurrentLine,
+  getDocumentedSoftware,
+  versionOfFolder,
+  type DocumentedVersion,
 } from '@/lib/versions';
 import { resolveIcon } from '@/lib/resolveIcon';
-import React from 'react';
-import { SiExpo, SiElectron } from '@icons-pack/react-simple-icons';
 
 /**
- * Only the API summary and release notes are versioned (one MDX per
- * version; latest at `index.mdx`, older at `vX.Y.Z.mdx` under
- * `content/docs/sdk/reference/api` and
- * `content/docs/sdk/reference/release-notes`).
- * The version dropdown handles switching for those pages; everything else
- * uses a single bare path per topic.
- */
-
-/**
- * Each top-level node of `customTree` is a collection, declared as a folder
- * with `root: true`. That flag is what makes Fumadocs treat it as a Layout
- * Tab and scope the sidebar to it: the framework matches the pathname
+ * Each top-level node of the composed tree is a collection, declared as a
+ * folder with `root: true`. That flag is what makes Fumadocs treat it as a
+ * Layout Tab and scope the sidebar to it: the framework matches the pathname
  * against the tree, takes the last root folder on that path as the active
  * root, and renders only that root's children.
  *
@@ -29,10 +20,21 @@ import { SiExpo, SiElectron } from '@icons-pack/react-simple-icons';
  * among its children — otherwise the overview would be reachable from the
  * tab but not from the sidebar.
  *
- * Every URL is collection-scoped, matching where the page now lives under
- * `content/docs/<collection>`. The framework resolves the active collection
- * by matching the pathname against the tree, so these prefixes are what makes
- * a page activate its own tab.
+ * Every URL is collection-scoped, matching where the page lives under
+ * `content/docs/<collection>`. The framework resolves the active collection by
+ * matching the pathname against the tree, so these prefixes are what makes a
+ * page activate its own tab.
+ *
+ * Navigation is declared in two dialects, by collection:
+ *
+ *   - An unversioned collection is declared here, by hand, as the `children`
+ *     of its descriptor below.
+ *   - A versioned collection declares nothing here. Each of its documentation
+ *     lines carries its own `meta.json` files under
+ *     `content/docs/<collection>/<folder>/`, and one root folder per line is
+ *     composed from them at build time. Two lines can therefore order, add, or
+ *     drop entries independently, and cutting a line copies its navigation
+ *     along with its pages — the folder is the whole of it.
  */
 
 const platformChildren: Node[] = [
@@ -88,273 +90,6 @@ const platformChildren: Node[] = [
   },
 ];
 
-const sdkChildren: Node[] = [
-  {
-    type: 'separator',
-    name: 'Getting started',
-  },
-  {
-    name: 'Overview',
-    url: '/sdk',
-    type: 'page',
-    icon: resolveIcon('DoorOpen'),
-  },
-  {
-    name: 'Quickstart',
-    url: '/sdk/quickstart',
-    type: 'page',
-    icon: resolveIcon('Rocket'),
-  },
-  {
-    name: 'System requirements',
-    url: '/sdk/system-requirements',
-    type: 'page',
-    icon: resolveIcon('Stethoscope'),
-  },
-  {
-    name: 'Installation',
-    url: '/sdk/installation',
-    type: 'page',
-    icon: resolveIcon('Package'),
-  },
-  {
-    name: 'Configuration',
-    type: 'folder',
-    icon: resolveIcon('SlidersHorizontal'),
-    index: { type: 'page', name: 'Configuration', url: '/sdk/configuration' },
-    children: [
-      {
-        name: 'Plugin system',
-        type: 'folder',
-        icon: resolveIcon('Plug'),
-        index: { type: 'page', name: 'Plugin system', url: '/sdk/configuration/plugins' },
-        children: [
-          {
-            name: 'Write a custom plugin',
-            url: '/sdk/configuration/plugins/write-custom-plugin',
-            type: 'page',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    name: 'CLI',
-    url: '/sdk/cli',
-    type: 'page',
-    icon: resolveIcon('Terminal'),
-  },
-  {
-    type: 'separator',
-    name: 'Models',
-  },
-  {
-    name: 'Download lifecycle',
-    url: '/sdk/models/download-lifecycle',
-    type: 'page',
-    icon: resolveIcon('Download'),
-  },
-  {
-    name: 'Sharded models',
-    url: '/sdk/models/sharded-models',
-    type: 'page',
-    icon: resolveIcon('Merge'),
-  },
-  {
-    type: 'separator',
-    name: 'AI capabilities',
-  },
-  {
-    name: 'Text generation',
-    url: '/sdk/ai-capabilities/text-generation',
-    type: 'page',
-    icon: resolveIcon('MessagesSquare'),
-  },
-  {
-    name: 'Text embeddings',
-    url: '/sdk/ai-capabilities/text-embeddings',
-    type: 'page',
-    icon: resolveIcon('Hash'),
-  },
-  {
-    name: 'RAG',
-    url: '/sdk/ai-capabilities/rag',
-    type: 'page',
-    icon: resolveIcon('ScanSearch'),
-  },
-  {
-    name: 'Fine-tuning',
-    url: '/sdk/ai-capabilities/fine-tuning',
-    type: 'page',
-    icon: resolveIcon('FlaskConical'),
-  },
-  {
-    name: 'Multimodal',
-    url: '/sdk/ai-capabilities/multimodal',
-    type: 'page',
-    icon: resolveIcon('GalleryHorizontal'),
-  },
-  {
-    name: 'Batch processing',
-    url: '/sdk/ai-capabilities/batch-processing',
-    type: 'page',
-    icon: resolveIcon('Boxes'),
-  },
-  {
-    name: 'Image generation',
-    url: '/sdk/ai-capabilities/image-generation',
-    type: 'page',
-    icon: resolveIcon('Image'),
-  },
-  {
-    name: 'Video generation',
-    url: '/sdk/ai-capabilities/video-generation',
-    type: 'page',
-    icon: resolveIcon('Video'),
-  },
-  {
-    name: 'Transcription',
-    url: '/sdk/ai-capabilities/transcription',
-    type: 'page',
-    icon: resolveIcon('Speech'),
-  },
-  {
-    name: 'Text-to-Speech',
-    url: '/sdk/ai-capabilities/text-to-speech',
-    type: 'page',
-    icon: resolveIcon('Volume2'),
-  },
-  {
-    name: 'Voice assistant',
-    url: '/sdk/ai-capabilities/voice-assistant',
-    type: 'page',
-    icon: resolveIcon('Mic'),
-  },
-  {
-    name: 'Translation',
-    url: '/sdk/ai-capabilities/translation',
-    type: 'page',
-    icon: resolveIcon('Languages'),
-  },
-  {
-    name: 'BCI',
-    url: '/sdk/ai-capabilities/bci',
-    type: 'page',
-    icon: resolveIcon('Brain'),
-  },
-  {
-    name: 'VLA',
-    url: '/sdk/ai-capabilities/vla',
-    type: 'page',
-    icon: resolveIcon('Eye'),
-  },
-  {
-    name: 'OCR',
-    url: '/sdk/ai-capabilities/ocr',
-    type: 'page',
-    icon: resolveIcon('ScanText'),
-  },
-  {
-    name: 'Image classification',
-    url: '/sdk/ai-capabilities/image-classification',
-    type: 'page',
-    icon: resolveIcon('Shapes'),
-  },
-  {
-    type: 'separator',
-    name: 'P2P capabilities',
-  },
-  {
-    name: 'Delegated inference',
-    url: '/sdk/p2p-capabilities/delegated-inference',
-    type: 'page',
-    icon: resolveIcon('Share2'),
-  },
-  {
-    name: 'Blind relays',
-    url: '/sdk/p2p-capabilities/blind-relays',
-    type: 'page',
-    icon: resolveIcon('Router'),
-  },
-  {
-    type: 'separator',
-    name: 'Runtime',
-  },
-  {
-    name: 'Cancellation',
-    url: '/sdk/runtime/cancellation',
-    type: 'page',
-    icon: resolveIcon('CircleStop'),
-  },
-  {
-    name: 'Lifecycle',
-    url: '/sdk/runtime/lifecycle',
-    type: 'page',
-    icon: resolveIcon('Moon'),
-  },
-  {
-    name: 'Logging',
-    url: '/sdk/runtime/logging',
-    type: 'page',
-    icon: resolveIcon('Activity'),
-  },
-  {
-    name: 'Profiler',
-    url: '/sdk/runtime/profiler',
-    type: 'page',
-    icon: resolveIcon('Timer'),
-  },
-  {
-    type: 'separator',
-    name: 'Tutorials',
-  },
-  {
-    name: 'Build on Electron',
-    url: '/sdk/tutorials/electron',
-    type: 'page',
-    icon: React.createElement(SiElectron, { className: 'h-4 w-4' }),
-  },
-  {
-    name: 'Build on Expo',
-    url: '/sdk/tutorials/expo',
-    type: 'page',
-    icon: React.createElement(SiExpo, { className: 'h-4 w-4' }),
-  },
-  {
-    type: 'separator',
-    name: 'Reference',
-  },
-  {
-    name: 'API',
-    url: '/sdk/reference/api',
-    type: 'page',
-    icon: resolveIcon('BookA'),
-  },
-  {
-    name: 'Release notes',
-    url: '/sdk/reference/release-notes',
-    type: 'page',
-    icon: resolveIcon('Tag'),
-  },
-  {
-    type: 'separator',
-    name: 'Help',
-  },
-  {
-    name: 'Troubleshooting',
-    url: '/sdk/troubleshooting',
-    type: 'page',
-    icon: resolveIcon('Bug'),
-  },
-  {
-    name: 'Discord',
-    url: 'https://discord.com/invite/tetherdev',
-    type: 'page',
-    external: true,
-    icon: resolveIcon('MessageCircle'),
-  },
-];
-
 const providerChildren: Node[] = [
   {
     name: 'Overview',
@@ -394,100 +129,171 @@ const resourcesChildren: Node[] = [
   },
 ];
 
-export const customTree: Node[] = [
+interface Collection {
+  name: string;
+  description: string;
+  /** The collection's path, absolute and without a trailing slash. */
+  path: `/${string}`;
+  /**
+   * The sidebar entries, for a collection that declares them here. Left out by
+   * a versioned collection, whose lines declare their own in `meta.json`.
+   */
+  children?: Node[];
+}
+
+/**
+ * The collections, in the order the collection bar lists them. One descriptor
+ * feeds both the bar and the root folders that scope the sidebar, so the two
+ * can never list different collections.
+ */
+const COLLECTIONS: Collection[] = [
   {
     name: 'Platform',
     description: 'What QVAC is and what ships with it',
-    type: 'folder',
-    root: true,
-    index: { type: 'page', name: 'Overview', url: '/platform' },
+    path: '/platform',
     children: platformChildren,
   },
   {
     name: 'SDK',
     description: 'Install, configure, and build with the SDK',
-    type: 'folder',
-    root: true,
-    index: { type: 'page', name: 'Overview', url: '/sdk' },
-    children: sdkChildren,
+    path: '/sdk',
   },
   {
     name: 'Provider',
     description: 'Run and connect the model provider server',
-    type: 'folder',
-    root: true,
-    index: { type: 'page', name: 'Overview', url: '/provider' },
+    path: '/provider',
     children: providerChildren,
   },
   {
     name: 'Resources',
     description: 'Tutorials, how-tos, and sample projects',
-    type: 'folder',
-    root: true,
-    index: { type: 'page', name: 'Overview', url: '/resources' },
+    path: '/resources',
     children: resourcesChildren,
   },
 ];
 
 /**
- * The collection bar's entries, derived from the same folders that scope the
- * sidebar so the two can never list different collections.
+ * The children a documentation line declares, read out of the page tree
+ * Fumadocs builds from `meta.json`. `folderPath` is relative to
+ * `content/docs`, group parentheses included — `sdk/(v0.17)`.
+ *
+ * Throws when the folder is absent, because the alternative is a collection
+ * that renders an empty sidebar: the manifest names a line whose content was
+ * never cut, and that should stop the build rather than ship.
+ */
+export function lineChildren(pageTree: Root, folderPath: string): Node[] {
+  const id = `${pageTree.$id}:${folderPath}`;
+
+  function find(nodes: Node[]): Node[] | undefined {
+    for (const node of nodes) {
+      if (node.type !== 'folder') continue;
+      if (node.$id === id) return node.children;
+      const found = find(node.children);
+      if (found) return found;
+    }
+  }
+
+  const children = find(pageTree.children);
+  if (!children) {
+    throw new Error(
+      `No content folder at content/docs/${folderPath}. The version manifest ` +
+        `declares this line, so either cut it or drop its manifest entry.`,
+    );
+  }
+  return children;
+}
+
+/**
+ * Where a line is entered. The current line answers at the collection's own
+ * path, written slash-less like every other entry declared here; an older line
+ * answers at its version segment, which carries a dot and therefore needs the
+ * trailing slash (see `computeSectionVersionUrl`).
+ */
+function lineIndexUrl(
+  collection: Collection,
+  line: DocumentedVersion,
+  current: DocumentedVersion | null,
+): string {
+  const url = computeSectionVersionUrl(
+    collection.path,
+    versionOfFolder(line.folder),
+    current ? versionOfFolder(current.folder) : null,
+  );
+  return url === `${collection.path}/` ? collection.path : url;
+}
+
+/**
+ * The root folders a collection contributes: one for an unversioned
+ * collection, and one per line for a versioned one. A line needs its own root
+ * so that the sidebar beside a page shows that line and no other.
+ */
+function collectionRoots(collection: Collection, pageTree: Root): Node[] {
+  const root = {
+    name: collection.name,
+    description: collection.description,
+    type: 'folder' as const,
+    root: true,
+  };
+
+  if (collection.children) {
+    return [
+      {
+        ...root,
+        index: { type: 'page', name: 'Overview', url: collection.path },
+        children: collection.children,
+      },
+    ];
+  }
+
+  const software = getDocumentedSoftware(collection.path);
+  if (!software) {
+    throw new Error(
+      `Collection ${collection.name} declares no children and no manifest ` +
+        `entry, so nothing describes its navigation.`,
+    );
+  }
+
+  const current = getCurrentLine(software);
+  const folder = collection.path.slice(1);
+  return software.versions.map((line): Node => ({
+    ...root,
+    index: {
+      type: 'page',
+      name: 'Overview',
+      url: lineIndexUrl(collection, line, current),
+    },
+    children: lineChildren(pageTree, `${folder}/${line.folder}`),
+  }));
+}
+
+/**
+ * The navigation tree, composed from what this file declares and what the
+ * documentation lines declare for themselves.
+ *
+ * A function, not a constant, because the derived half comes from
+ * `source.pageTree` — which the caller holds, keeping this module free of the
+ * content layer and testable without it.
+ */
+export function buildCustomTree(pageTree: Root): Node[] {
+  return COLLECTIONS.flatMap((collection) =>
+    collectionRoots(collection, pageTree),
+  );
+}
+
+/**
+ * The collection bar's entries — exactly one per collection, pointing at its
+ * current line, however many lines that collection publishes.
  *
  * Passing them explicitly, rather than letting the layout derive them, is what
  * decides a page's collection by URL prefix: a derived tab carries the set of
  * URLs declared under its folder and marks itself active only for those, which
  * leaves any page absent from the tree belonging to no collection at all. A
  * tab without that set falls back to matching the pathname against its own
- * URL, which is what "the page lives under `/sdk`" means here.
+ * URL, which is what "the page lives under `/sdk`" means here — and it is what
+ * keeps one tab active across every line of a versioned collection.
  */
-export const collectionTabs = customTree.flatMap((node) =>
-  node.type === 'folder' && node.root && node.index
-    ? [
-        {
-          url: node.index.url,
-          title: node.name,
-          description: node.description,
-        },
-      ]
-    : [],
-);
-
-/**
- * One SDK root folder per archived version page, carrying that page as its
- * `index` and the SDK's real children as its own.
- *
- * The archived pages are deliberately absent from the sidebar — the version
- * selector is how a reader moves between them — but Fumadocs resolves the
- * active collection by finding the pathname in the tree, so a page that is not
- * there belongs to no collection: the sidebar falls back to listing the four
- * collections. A folder's `index` is matched during that resolution and is the
- * one node a root folder never renders as a sidebar entry, which is exactly
- * the asymmetry these pages need. Each therefore resolves to a folder that
- * looks like SDK, and reads as an ordinary SDK page: SDK marked in the
- * collection bar, the SDK sidebar beside it, and no entry of its own anywhere.
- */
-function archivedVersionRoots(section: VersionedSection): Node[] {
-  return section.versions
-    .filter((version) => !version.isLatest)
-    .map((version) => ({
-      name: 'SDK',
-      description: 'Install, configure, and build with the SDK',
-      type: 'folder',
-      root: true,
-      index: {
-        type: 'page',
-        name: version.label,
-        url: `${section.basePath}/${version.value}`,
-      },
-      children: sdkChildren,
-    }));
-}
-
-/** The tree the framework searches only when the main one has no match. */
-export const archivedVersionsTree: Root = {
-  name: 'Archived versions',
-  children: [
-    ...archivedVersionRoots(API_SECTION),
-    ...archivedVersionRoots(RELEASE_NOTES_SECTION),
-  ],
-};
+export const collectionTabs = COLLECTIONS.map((collection) => ({
+  url: collection.path,
+  title: collection.name,
+  description: collection.description,
+}));

@@ -20,6 +20,11 @@ const monorepoRoot = resolve(process.cwd(), '../..');
 export const docs = defineDocs({
   docs: {
     schema: frontmatterSchema.extend({
+      // The sidebar entry's label, when it should read shorter than the page's
+      // own title. A page's tree node otherwise takes `title` verbatim, which
+      // is right for the page and too long beside its siblings — "Runtime
+      // lifecycle" under a "Runtime" separator, say.
+      sidebarTitle: z.string().optional(),
       titleStyle: z.enum(["code", "text"]).optional(),
       version: z.string().optional(),
       ogImage: z.string().optional(),

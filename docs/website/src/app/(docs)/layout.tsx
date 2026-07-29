@@ -5,11 +5,8 @@ import { FaGithub, FaDiscord, FaXTwitter } from 'react-icons/fa6';
 import { SiHuggingface } from '@icons-pack/react-simple-icons';
 import { KeetIcon } from '@/components/keet-icon';
 import KeetRoomModalMount from '@/components/keet-modal';
-import {
-  archivedVersionsTree,
-  collectionTabs,
-  customTree,
-} from '@/lib/custom-tree';
+import { buildCustomTree, collectionTabs } from '@/lib/custom-tree';
+import { source } from '@/lib/source';
 import {
   AskAISearchToggleLarge,
   AskAISearchToggleSmall,
@@ -71,8 +68,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         tree={{
           name: 'docs',
           $id: 'latest',
-          children: customTree,
-          fallback: archivedVersionsTree,
+          children: buildCustomTree(source.pageTree),
         }}
         searchToggle={{
           components: {
