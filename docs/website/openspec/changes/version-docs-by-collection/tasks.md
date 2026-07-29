@@ -33,14 +33,16 @@
 
 ## 4. Phase 1 — Cut the SDK's first two lines
 
-- [ ] 4.1 Move the sixteen `reference/api/v*.mdx` and `reference/release-notes/v*.mdx` files to `content/_unpublished/`, keeping only both `index.mdx`
-- [ ] 4.1b Flatten each surviving `index.mdx` up to `reference/api.mdx` and `reference/release-notes.mdx`, so the entry is a page and not a folder holding one, and confirm both URLs are unchanged
-- [ ] 4.2 `git mv` every SDK page into `content/docs/sdk/v0.16/`, keeping what the site serves today, and confirm no `.mdx` file is left directly under `content/docs/sdk`
-- [ ] 4.3 Copy `v0.16` to `(v0.17)` verbatim, `meta.json` files included, and confirm the two trees are identical before any release edit
-- [ ] 4.4 Point the SDK's manifest entries at the folders as cut, then delete one entry and confirm the correspondence check fails before restoring it
-- [ ] 4.5 Reorder or omit one entry in `(v0.17)`'s `meta.json` and confirm only that line's sidebar changes, then revert it
-- [ ] 4.6 Replay the pre-versioning URL set and confirm every SDK URL still resolves at its version-less path, without a redirect
-- [ ] 4.7 Regenerate the `.source/` registry and confirm it lists no path that no longer exists
+- [x] 4.1 Move the sixteen `reference/api/v*.mdx` and `reference/release-notes/v*.mdx` files to `content/_unpublished/`, keeping only both `index.mdx`
+- [x] 4.1b Flatten each surviving `index.mdx` up to `reference/api.mdx` and `reference/release-notes.mdx`, so the entry is a page and not a folder holding one, and confirm both URLs are unchanged
+- [x] 4.2 `git mv` every SDK page into `content/docs/sdk/v0.16/`, keeping what the site serves today, and confirm no `.mdx` file is left directly under `content/docs/sdk`
+- [x] 4.3 Copy `v0.16` to `(v0.17)` verbatim, `meta.json` files included, and confirm the two trees are identical before any release edit
+- [x] 4.4 Point the SDK's manifest entries at the folders as cut, then delete one entry and confirm the correspondence check fails before restoring it
+- [x] 4.5 Reorder or omit one entry in `(v0.17)`'s `meta.json` and confirm only that line's sidebar changes, then revert it
+- [x] 4.6 Replay the pre-versioning URL set and confirm every SDK URL still resolves at its version-less path, without a redirect
+- [x] 4.7 Regenerate the `.source/` registry and confirm it lists no path that no longer exists
+- [x] 4.8 Point `generate-api-docs.ts` and `generate-release-notes.ts` at the current line's `reference/api.mdx` and `reference/release-notes.mdx`, resolved from the manifest, since the cut removed the folders they wrote into and a page written there would have claimed the current line's URL
+- [x] 4.9 Drop the per-series target those two generators took, refusing `--target` rather than ignoring it, and correct the paths `docs-workflow.md` states for the live flow
 
 ## 5. Phase 1 — URL continuity
 

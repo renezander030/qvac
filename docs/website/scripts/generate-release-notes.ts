@@ -41,13 +41,13 @@
  *   a freshly-frozen series snapshot from `vX.Y.x (latest)` to plain
  *   `vX.Y.x` without touching the body.
  *
- * Targets
- * -------
- * - `--latest`: write to `index.mdx`
- * - `--target=<file>`: write to `release-notes/<file>` (used by the
- *   patch-archived flow to address `vX.Y.x.mdx`)
- * - otherwise: default to the series-named sibling
- *   `vX.Y.x.mdx` derived from the version arg
+ * Target
+ * ------
+ * The release notes of the SDK's current documentation line,
+ * `content/docs/sdk/<current line>/reference/release-notes.mdx`, resolved
+ * from the version manifest. A released line is never regenerated — it is
+ * what the site already serves — so there is one target and no way to name
+ * another.
  *
  * Usage:
  *   bun run scripts/generate-release-notes.ts <version> [flags]
@@ -64,10 +64,9 @@ import {
   type OverrideSection,
 } from "./lib/changelog-parser";
 import {
-  RELEASE_NOTES_DIR,
+  RELEASE_NOTES_PAGE,
   parseVersion,
   rewriteFrontmatterTitleLine,
-  seriesFileName,
   seriesName,
 } from "./lib/release-shared.js";
 
@@ -247,20 +246,19 @@ async function main() {
   const isLatest = args.includes("--latest");
   const appendPatch = args.includes("--append-patch");
   const titleOnly = args.includes("--title-only");
-  const targetFlag = args.find((arg) => arg.startsWith("--target="));
-  const target = targetFlag ? targetFlag.slice("--target=".length) : null;
 
   if (!version || !/^\d+\.\d+\.\d+$/.test(version)) {
     console.error(
-      "Usage: bun run scripts/generate-release-notes.ts <version> [--latest] [--target=<file>] [--append-patch] [--title-only]",
+      "Usage: bun run scripts/generate-release-notes.ts <version> [--latest] [--append-patch] [--title-only]",
     );
     console.error("  version must be semver (e.g. 0.11.1)");
     process.exit(1);
   }
 
-  if (isLatest && target) {
+  if (args.some((arg) => arg.startsWith("--target="))) {
     console.error(
-      "Error: --latest and --target=<file> are mutually exclusive.",
+      "Error: --target is gone. The release notes are one page per " +
+        "documentation line, written to the current line the manifest declares.",
     );
     process.exit(1);
   }
@@ -275,16 +273,7 @@ async function main() {
   const parsed = parseVersion(version);
   const series = seriesName(parsed);
   const websiteDir = process.cwd();
-  const releaseNotesDir = RELEASE_NOTES_DIR;
-
-  // Resolve the output target. Default falls back to the series-named
-  // sibling for the version's minor — generic enough that callers don't
-  // need to know about the new naming convention.
-  const outputPath = resolve(
-    releaseNotesDir,
-    target ??
-      (isLatest ? "index.mdx" : seriesFileName(parsed.major, parsed.minor)),
-  );
+  const outputPath = RELEASE_NOTES_PAGE;
 
   // -------------------------------------------------------------------
   // Title-only path — relabel a freshly-frozen archived snapshot.

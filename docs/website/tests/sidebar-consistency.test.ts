@@ -12,7 +12,7 @@ vi.mock('@/lib/resolveIcon', () => ({
 }))
 
 import { buildCustomTree } from '@/lib/custom-tree'
-import { DOCUMENTED_SOFTWARE } from '@/lib/versions'
+import { DOCUMENTED_SOFTWARE, getVersionForPath } from '@/lib/versions'
 import type { Node, Root } from 'fumadocs-core/page-tree'
 
 const PAGE_EXTENSIONS = ['.mdx', '.md']
@@ -63,10 +63,41 @@ function collectUrls (nodes: Node[]): string[] {
 }
 
 /**
+ * The content paths a URL may resolve from. Inside a versioned collection the
+ * URL says nothing about the folder: the current line answers version-less
+ * and lives in a folder group (`sdk/(v0.17)/quickstart.mdx` serves
+ * `/sdk/quickstart`), and an older line answers under its own segment. So the
+ * line the URL belongs to is resolved from the manifest, and its folder
+ * spliced in after the collection.
+ *
+ * The literal path stays a candidate too, for a collection whose content has
+ * not been cut into lines yet. Which layout is the right one is the structure
+ * check's question, not this one's — here an entry only has to name a page
+ * that exists.
+ */
+function contentPaths (url: string): string[] {
+  const cleanUrl = url.split('#')[0].replace(/^\//, '').replace(/\/$/, '')
+  if (!cleanUrl) return ['index']
+
+  const paths = [cleanUrl]
+
+  const resolved = getVersionForPath('/' + cleanUrl)
+  if (resolved && resolved.software.kind === 'collection') {
+    const { software, version } = resolved
+    const collection = software.path.slice(1)
+    const rest = cleanUrl
+      .slice(collection.length)
+      .replace(/^\//, '')
+      .replace(new RegExp(`^${version.version}(/|$)`), '')
+    paths.push([collection, version.folder, rest].filter(Boolean).join('/'))
+  }
+
+  return paths
+}
+
+/**
  * For a sidebar URL like `/sdk/reference/api`, the content file resolves to
- * either:
- *   - `content/docs/sdk/reference/api.mdx`, or
- *   - `content/docs/sdk/reference/api/index.mdx`
+ * either `<line>/reference/api.mdx` or `<line>/reference/api/index.mdx`.
  *
  * Anchor-only URLs (`/#community`) resolve against the docs root index.
  *
@@ -74,14 +105,14 @@ function collectUrls (nodes: Node[]): string[] {
  * dotted slug (`v0.16`) needs it to resolve at the CDN.
  */
 function getExpectedPaths (url: string): string[] {
-  const cleanUrl = url.split('#')[0].replace(/^\//, '').replace(/\/$/, '')
-  if (!cleanUrl) {
-    return [path.join(CONTENT_DIR, 'index.mdx')]
-  }
-  return PAGE_EXTENSIONS.flatMap((extension) => [
-    path.join(CONTENT_DIR, cleanUrl + extension),
-    path.join(CONTENT_DIR, cleanUrl, 'index' + extension),
-  ])
+  return contentPaths(url).flatMap((contentPath) =>
+    contentPath === 'index'
+      ? [path.join(CONTENT_DIR, 'index.mdx')]
+      : PAGE_EXTENSIONS.flatMap((extension) => [
+          path.join(CONTENT_DIR, contentPath + extension),
+          path.join(CONTENT_DIR, contentPath, 'index' + extension),
+        ]),
+  )
 }
 
 /** Every directory under `content/docs` holding a `meta.json`. */

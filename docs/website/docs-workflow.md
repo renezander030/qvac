@@ -49,10 +49,10 @@ Content falls into two categories:
 | Category | Path | Committed? |
 |---|---|---|
 | Manual content (guides, tutorials, addons) | one collection folder per top level: `content/docs/platform/`, `content/docs/sdk/`, `content/docs/provider/`, `content/docs/resources/` | Yes |
-| SDK API summary (generated) | `content/docs/sdk/reference/api/index.mdx`, `content/docs/sdk/reference/api/v<X.Y>.x.mdx` | Yes (committed once per minor release) |
-| SDK release notes (generated) | `content/docs/sdk/reference/release-notes/index.mdx`, `content/docs/sdk/reference/release-notes/v<X.Y>.x.mdx` | Yes (committed on every minor and patch release) |
+| SDK API summary (generated) | `content/docs/sdk/<current line>/reference/api.mdx` | Yes (committed once per minor release) |
+| SDK release notes (generated) | `content/docs/sdk/<current line>/reference/release-notes.mdx` | Yes (committed on every minor and patch release) |
 
-The SDK API summary and release notes are **generated from TypeScript source / package CHANGELOGs** via [TypeDoc](https://typedoc.org/) and Nunjucks. They live as a single MDX file **per minor series** — the latest minor at `index.mdx`, older minors as sibling `v<X.Y>.x.mdx` files (literal `x` marker; one permanent page per minor line, accumulating patch sections inside). Generation is triggered by the release pipeline; locally a maintainer can regenerate to preview.
+The SDK API summary and release notes are **generated from TypeScript source / package CHANGELOGs** via [TypeDoc](https://typedoc.org/) and Nunjucks. Each is one MDX page inside the SDK's current documentation line, the folder `src/lib/versions.ts` declares as current. A line that has shipped is never regenerated, so there is one target and no way to name another. Generation is triggered by the release pipeline; locally a maintainer can regenerate to preview.
 
 ### How the Pipeline Works
 
@@ -68,13 +68,11 @@ SDK source (packages/sdk)
 Phase 1: TypeDoc extraction  ──►  api-data.json
   │
   ▼
-Phase 2: Nunjucks rendering  ──►  content/docs/sdk/reference/api/index.mdx        (latest minor)
-                              ──►  content/docs/sdk/reference/api/v<X.Y>.x.mdx     (frozen older minor series)
-                              ──►  src/lib/versions.ts                          (version switcher)
+Phase 2: Nunjucks rendering  ──►  content/docs/sdk/<current line>/reference/api.mdx
 ```
 
-Release notes are **per minor series** too — each minor line owns one
-permanent MDX page that accumulates patch sections as `## vX.Y.Z`
+Release notes are one page in the current line too — it accumulates patch
+sections as `## vX.Y.Z`
 directly under the `## vX.Y.0` minor block. The body of each section is
 inlined verbatim from each SDK pod package's
 `packages/<pkg>/changelog/<version>/CHANGELOG_LLM.md` under a per-package
@@ -133,36 +131,30 @@ bun run scripts/generate-api-docs.ts <version> [flags]
 Examples:
 
 ```bash
-# Re-render the latest summary into content/docs/sdk/reference/api/index.mdx
+# Re-render the summary into the SDK's current line
 bun run scripts/generate-api-docs.ts 0.11.0 --latest
 
-# Render an older minor series into content/docs/sdk/reference/api/v0.10.x.mdx (no --latest)
-bun run scripts/generate-api-docs.ts 0.10.0
-
-# Bump only the frontmatter title (called by the minor freeze flow):
-# no TypeDoc, no render
-bun run scripts/generate-api-docs.ts 0.10.0 --target=v0.10.x.mdx --title-only
+# Bump only the frontmatter title: no TypeDoc, no render
+bun run scripts/generate-api-docs.ts 0.11.1 --latest --title-only
 ```
 
 This will:
 1. Run TypeDoc against the SDK entry point (`SDK_PATH/index.ts`) and write `api-data.json`
-2. Render a single MDX via the Nunjucks `single-page.njk` template:
-   - `--latest` → `content/docs/sdk/reference/api/index.mdx`
-   - `--target=<file>` → `content/docs/sdk/reference/api/<file>` (explicit override)
-   - otherwise → `content/docs/sdk/reference/api/v<X.Y>.x.mdx` (series-named)
+2. Render a single MDX via the Nunjucks `single-page.njk` template into
+   `content/docs/sdk/<current line>/reference/api.mdx`, the line
+   `src/lib/versions.ts` declares as current
 3. Run a smoke test that checks for `## Functions` and `## Errors` headings
 
 `--title-only` short-circuits this: it skips TypeDoc + render and only
-rewrites the `title:` line of the existing target MDX, then runs the
+rewrites the `title:` line of the existing page, then runs the
 same smoke test.
 
 **Flags:**
 
 | Flag | Description |
 |---|---|
-| `--latest` | Write to `index.mdx` instead of `v<X.Y>.x.mdx`. |
-| `--target=<file>` | Override the output filename inside `api/` (mutually exclusive with `--latest`). |
-| `--title-only` | Rewrite the frontmatter title in-place (skips TypeDoc + render). Used by the minor-release freeze step to relabel the outgoing snapshot. |
+| `--latest` | Label this version as the latest in the page title. |
+| `--title-only` | Rewrite the frontmatter title in-place (skips TypeDoc + render). |
 | `--force-extract` | Bypass the mtime cache and re-run TypeDoc extraction. |
 
 **2. Release a new version end-to-end (freeze outgoing, generate incoming, refresh dropdown):**
@@ -386,7 +378,7 @@ Two GitHub Actions workflows touch the docs: one validates docs PRs, one manuall
 
 **Purpose:** Catches build errors and broken links in docs PRs before merge.
 
-The API summary `index.mdx` lives at `content/docs/sdk/reference/api/` and is committed to the repo (refreshed locally by the `qv-sdk-changelog` skill Step 8 during SDK release prep), so PR checkouts always have it on disk — no placeholder step is needed.
+The API summary page lives in the SDK's current line, at `content/docs/sdk/<current line>/reference/api.mdx`, and is committed to the repo (refreshed locally by the `qv-sdk-changelog` skill Step 8 during SDK release prep), so PR checkouts always have it on disk — no placeholder step is needed.
 
 ### 2. Promote docs to production (manual)
 
@@ -416,7 +408,7 @@ The API summary `index.mdx` lives at `content/docs/sdk/reference/api/` and is co
    - **Minor (`X.Y.0`)** — full flow: freezes the outgoing `index.mdx` into a series sibling `v<outgoingMajor>.<outgoingMinor>.x.mdx`, generates the new API summary into `index.mdx` (TypeDoc + render — output is deterministic by construction), generates the new release notes into `index.mdx` (per-package verbatim `CHANGELOG_LLM.md` under a single `## v<X.Y.0>` block), refreshes `src/lib/versions.ts`.
    - **Patch (`X.Y.Z`, `Z >= 1`)** — `release-version-patch.ts` inspects `src/lib/versions.ts` and picks `patch-latest` (incoming `X.Y` == latest `X.Y`: insert `## v<X.Y.Z>` directly after the existing `## v<X.Y>.0` block of `index.mdx`) or `patch-archived` (older minor: insert the same section into the existing `v<X.Y>.x.mdx`, no rename). The API summary page is never touched by patches.
 2. Runs `npm run build` from `docs/website` to verify the site still compiles (fail-stop on error).
-3. Only the generated surfaces are committed — `content/docs/sdk/reference/api/**`, `content/docs/sdk/reference/release-notes/**`, and `src/lib/versions.ts`. The skill only generates files (it never runs `git add`); review `git status` and commit these, while all build/generation byproducts (`api-data.json`, `.next/`, `.source/`, `out/`, `dist/`) are gitignored so they never show up.
+3. Only the generated surfaces are committed — `content/docs/sdk/<current line>/reference/api.mdx` and `content/docs/sdk/<current line>/reference/release-notes.mdx`. The skill only generates files (it never runs `git add`); review `git status` and commit these, while all build/generation byproducts (`api-data.json`, `.next/`, `.source/`, `out/`, `dist/`) are gitignored so they never show up.
 
 The dual-checkout race window the old CI workflow guarded against does not apply locally: the skill runs in the single release working tree after the changelog is generated, so the SDK source and CHANGELOGs are already the released state.
 
@@ -435,7 +427,7 @@ All scripts live in `docs/website/scripts/` and are designed to run with Bun.
 | `release-version.ts` | -- | **Retired**, kept for reference. Was the release dispatcher forwarding to the minor or patch orchestrator. |
 | `release-version-minor.ts` | -- | **Retired**, kept for reference. Was the minor (X.Y.0) orchestrator: freeze outgoing series → generate new latest → refresh `versions.ts`. |
 | `release-version-patch.ts` | -- | **Retired**, kept for reference. Was the patch (X.Y.Z, Z>=1) orchestrator, inserting `## v<X.Y.Z>` after the existing minor block. |
-| `generate-api-docs.ts` | `docs:generate-api` | Renders one minor series' API summary MDX. `--title-only` rewrites only the frontmatter title (called from the minor freeze flow); `--target=<file>` overrides the output filename. |
+| `generate-api-docs.ts` | `docs:generate-api` | Renders the API summary page of the SDK's current line. `--title-only` rewrites only the frontmatter title. |
 | `api-docs/extract.ts` | -- | Phase 1: TypeDoc analysis, writes `api-data.json` |
 | `api-docs/render.ts` | -- | Phase 2: Nunjucks rendering of `single-page.njk` from `api-data.json` |
 | `api-docs/audit-tsdoc.ts` | `docs:audit-tsdoc` | TSDoc completeness audit (standalone or via extraction) |
@@ -517,19 +509,19 @@ Version vX.Y.Z was not found
 
 **Cause:** a version is recorded but its MDX file doesn't exist on disk. Only reachable through the retired release tooling; the equivalent failure today is `tests/line-structure.test.ts` reporting a declared version whose folder is missing.
 
-**Fix:** Run `docs:generate-api -- <version> --latest` (writes `index.mdx`) to produce the missing page. For a version declared in `src/lib/versions.ts`, create the folder the entry names, or drop the entry.
+**Fix:** Run `docs:generate-api -- <version> --latest` to produce the missing page. For a version declared in `src/lib/versions.ts`, create the folder the entry names, or drop the entry.
 
 ### Build fails in CI (PR checks)
 
-The committed `content/docs/sdk/reference/api/index.mdx` is what `next build` reads. If the build still fails:
+The committed `content/docs/sdk/<current line>/reference/api.mdx` is what `next build` reads. If the build still fails:
 
 1. Check that `source.config.ts` and `next.config.mjs` are valid
 2. Run `bun run build` locally to reproduce
 3. Look for broken MDX frontmatter or invalid imports in `content/`
 
-### Recover a broken `index.mdx` after a bad release
+### Recover a broken reference page after a bad release
 
-If a release ran but produced a broken `reference/api/index.mdx` or `reference/release-notes/index.mdx`, restore it by re-running the orchestrator against the previous version:
+If a release ran but produced a broken `reference/api.mdx` or `reference/release-notes.mdx`, restore it by re-running the orchestrator against the previous version:
 
 ```bash
 # Auto-detects minor (full freeze + regen) vs patch (title-only + append).

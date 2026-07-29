@@ -13,6 +13,10 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { execSync } from "child_process";
 import { fileURLToPath } from "node:url";
+import {
+  getCurrentLine,
+  getDocumentedSoftware,
+} from "../../src/lib/versions.js";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 
@@ -20,26 +24,63 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const DOCS_WEBSITE_DIR = path.resolve(SCRIPT_DIR, "..", "..");
 
 /**
- * Absolute path to the versioned-content root. Both `api/` and
- * `release-notes/` live directly under here.
+ * The folder holding the SDK's current documentation line, read from the
+ * version manifest. Generated pages belong to the line being written next,
+ * which is the current one — a released line is not regenerated.
+ */
+function currentSdkLineFolder(): string {
+  const sdk = getDocumentedSoftware("/sdk");
+  const current = sdk && getCurrentLine(sdk);
+  if (!current) {
+    throw new Error(
+      "The version manifest declares no current line for /sdk, so there is " +
+        "nowhere to write generated pages.",
+    );
+  }
+  return current.folder;
+}
+
+/**
+ * Absolute path to the reference folder of the SDK's current line. Both the
+ * API summary and the release notes are written into it.
  *
- * The `sdk` segment is the collection that owns this content. Every script
- * that writes versioned pages resolves them from here, so a collection move
- * is one edit rather than one per script.
+ * The line segment comes from the manifest rather than being spelled here, so
+ * a cut moves generated output to the new line by the same edit that declares
+ * it, and nothing regenerates into a line that has already shipped.
  */
 export const CONTENT_REFERENCE = path.join(
   DOCS_WEBSITE_DIR,
   "content",
   "docs",
   "sdk",
+  currentSdkLineFolder(),
   "reference",
 );
 
-/** Absolute path to the API summary section directory. */
-export const API_DIR = path.join(CONTENT_REFERENCE, "api");
+/** Absolute path to the API summary page. */
+export const API_PAGE = path.join(CONTENT_REFERENCE, "api.mdx");
 
-/** Absolute path to the release notes section directory. */
-export const RELEASE_NOTES_DIR = path.join(CONTENT_REFERENCE, "release-notes");
+/** Absolute path to the release notes page. */
+export const RELEASE_NOTES_PAGE = path.join(
+  CONTENT_REFERENCE,
+  "release-notes.mdx",
+);
+
+/**
+ * The directories the patch-series scheme wrote its per-series pages into,
+ * before the SDK was cut into documentation lines. Nothing writes here: the
+ * pages moved into the lines and the scripts that addressed them are
+ * retired. Kept only so those scripts still compile.
+ */
+const RETIRED_REFERENCE = path.join(
+  DOCS_WEBSITE_DIR,
+  "content",
+  "docs",
+  "sdk",
+  "reference",
+);
+export const API_DIR = path.join(RETIRED_REFERENCE, "api");
+export const RELEASE_NOTES_DIR = path.join(RETIRED_REFERENCE, "release-notes");
 
 /** Absolute path to the version manifest the SPA reads at runtime. */
 export const VERSIONS_TS = path.join(
