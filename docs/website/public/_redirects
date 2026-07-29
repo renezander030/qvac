@@ -204,45 +204,79 @@
 
 # <<< END generated
 
-# Sevalla CDN does not resolve directory-to-index.html for path segments
-# containing dots (e.g. `v0.7.x`). The `:version` placeholder matches a
-# single path segment between slashes; the `200` rule rewrites each
-# versioned page's trailing-slash form to its `index.html`.
+# ======================================================================
+# RETIRED PATCH-SERIES ARCHIVES
+# ----------------------------------------------------------------------
+# The API summary and the release notes used to keep one page per minor
+# series alongside the current one. Versioning by line replaced that: each
+# line carries its own reference pages, so the sixteen series pages left
+# `content/docs` and their URLs redirect to the section's current page.
 #
-# Sevalla's Pretty URLs feature normally 301-redirects bare paths to the
-# trailing-slash form, but empirically it SKIPS paths whose final segment
-# contains a dot (treats them as file requests). So we cannot rely on it
-# for `vX.Y.Z` segments — we provide an explicit bare→with-slash 301
-# below.
-#
-# ORDER MATTERS (first-match-wins). The `200` rewrites for the
-# with-slash source MUST come before the `301` redirects for the bare
-# source. Sevalla's placeholder matcher is lenient about trailing slash
-# in the source pattern: a source ending in `:version` (no slash) will
-# match both `/foo/X` AND `/foo/X/`. If the `301` rule appeared first,
-# it would match the with-slash request too and 301 to itself — an
-# infinite redirect loop (verified empirically). Putting the `:version/`
-# rule first, with literal trailing slash, makes the more-specific
-# pattern win for with-slash requests, leaving the `301` rule to handle
-# only the bare form.
-#
-# Syntax mirrors the doc example
-# (https://docs.sevalla.com/static-sites/redirects#placeholders):
-#   /store/:category/:item   /products/:category/:item
+# The Markdown twins are listed one by one, above the patterns, because a
+# `:version` placeholder matches a whole segment and cannot tell
+# `v0.8.x` from `v0.8.x.md`. Left to the pattern, an agent asking for
+# Markdown would be sent to an HTML page.
+/sdk/reference/api/v0.8.x.md             /sdk/reference/api.md             301
+/sdk/reference/api/v0.9.x.md             /sdk/reference/api.md             301
+/sdk/reference/api/v0.10.x.md            /sdk/reference/api.md             301
+/sdk/reference/api/v0.11.x.md            /sdk/reference/api.md             301
+/sdk/reference/api/v0.12.x.md            /sdk/reference/api.md             301
+/sdk/reference/api/v0.13.x.md            /sdk/reference/api.md             301
+/sdk/reference/api/v0.14.x.md            /sdk/reference/api.md             301
+/sdk/reference/api/v0.15.x.md            /sdk/reference/api.md             301
+/sdk/reference/release-notes/v0.8.x.md   /sdk/reference/release-notes.md   301
+/sdk/reference/release-notes/v0.9.x.md   /sdk/reference/release-notes.md   301
+/sdk/reference/release-notes/v0.10.x.md  /sdk/reference/release-notes.md   301
+/sdk/reference/release-notes/v0.11.x.md  /sdk/reference/release-notes.md   301
+/sdk/reference/release-notes/v0.12.x.md  /sdk/reference/release-notes.md   301
+/sdk/reference/release-notes/v0.13.x.md  /sdk/reference/release-notes.md   301
+/sdk/reference/release-notes/v0.14.x.md  /sdk/reference/release-notes.md   301
+/sdk/reference/release-notes/v0.15.x.md  /sdk/reference/release-notes.md   301
 
-/sdk/reference/api/:version/             /sdk/reference/api/:version/index.html             200
-/sdk/reference/release-notes/:version/   /sdk/reference/release-notes/:version/index.html   200
-/sdk/reference/api/:version              /sdk/reference/api/:version/                       301
-/sdk/reference/release-notes/:version    /sdk/reference/release-notes/:version/             301
+# The page form, in both shapes. The pattern is safe here: its target has
+# one segment fewer than its source, so a redirected request cannot match
+# it again.
+/sdk/reference/api/:version/             /sdk/reference/api/             301
+/sdk/reference/release-notes/:version/   /sdk/reference/release-notes/   301
+/sdk/reference/api/:version              /sdk/reference/api/             301
+/sdk/reference/release-notes/:version    /sdk/reference/release-notes/   301
 
-# The same two sections at their pre-collections paths. The bare form is
-# listed because Pretty URLs skips dot-containing segments, so a bare
-# `/reference/api/v0.7.x` is never normalized into the with-slash form the
-# generated block below carries.
-/reference/api/:version/             /sdk/reference/api/:version/             301
-/reference/release-notes/:version/   /sdk/reference/release-notes/:version/   301
-/reference/api/:version              /sdk/reference/api/:version/             301
-/reference/release-notes/:version    /sdk/reference/release-notes/:version/   301
+# The same two sections at their pre-collections paths, sent straight to
+# the current page. The bare form is listed because Pretty URLs skips
+# dot-containing segments, so a bare `/reference/api/v0.7.x` is never
+# normalized into the with-slash form the generated block above carries.
+/reference/api/:version/             /sdk/reference/api/             301
+/reference/release-notes/:version/   /sdk/reference/release-notes/   301
+/reference/api/:version              /sdk/reference/api/             301
+/reference/release-notes/:version    /sdk/reference/release-notes/   301
+
+# ======================================================================
+# DOCUMENTATION LINES
+# ----------------------------------------------------------------------
+# A line that is not the current one answers under its own version
+# segment, `/sdk/v0.16/…`. Only the line's index needs rules: it is the
+# only URL of the line whose last segment carries the dot, so it alone
+# misses Pretty URLs' slash normalization and its directory resolution.
+# Every page below it ends in an undotted segment and resolves unaided.
+#
+# ORDER MATTERS (first-match-wins), for the reason the archives above
+# document: Sevalla's matcher is lenient about a trailing slash in the
+# source, so the slash-less `301` would match the with-slash request too
+# and redirect it to itself. The `200` rewrite goes first.
+#
+# The `301` is not just for inbound links. Next reads a dotted segment as a
+# file too, and strips the trailing slash off this URL whatever the page
+# tree hands it, so the site's own sidebar links the slash-less form and
+# reaches the index through this rule. `@vahor/next-broken-links` resolves
+# only the trailing-slash form, which is why `package.json` tells it to
+# ignore line indexes; `scripts/check-redirects.ts` is what proves they
+# resolve.
+#
+# The segment is written out rather than matched by a placeholder. A
+# `/sdk/:version` pattern would claim every first-level SDK path to cover
+# one, and a literal line makes a cut visible in the diff.
+/sdk/v0.16/   /sdk/v0.16/index.html   200
+/sdk/v0.16    /sdk/v0.16/             301
 
 # ======================================================================
 # PERMANENT REDIRECTS DUE TO CONTENT MOVE

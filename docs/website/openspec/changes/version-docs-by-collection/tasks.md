@@ -46,16 +46,16 @@
 
 ## 5. Phase 1 — URL continuity
 
-- [ ] 5.1 Hand-write the line rules in `public/_redirects`, following the `:version` placeholder form the archived series already use — one `200` rewrite of the trailing-slash form and one `301` from the slash-less form per nesting depth — plus one redirect per retired archive URL to its current series
-- [ ] 5.2 Place the block above the terminal `/* /404.html 404` rule, and below the exact rules the file's comment says must precede a `:version` pattern
-- [ ] 5.3 Capture the pre-versioning URL set as a fixture and extend `scripts/check-redirects.ts` to replay it
-- [ ] 5.4 Assert that no captured URL needs more than one redirect to reach its page
-- [ ] 5.5 List any captured URL no rule covers as knowingly dropped, and confirm nothing outside `public/_redirects` was added to keep a URL alive
-- [ ] 5.6 Write the remark plugin that prefixes a same-collection absolute link with the line of the page carrying it, leaving the current line, unversioned targets, and other collections untouched, and register it in `source.config.ts`
-- [ ] 5.7 Confirm the plugin's rewrite reaches the per-page Markdown as well as the HTML, by fetching the Markdown of a `v0.16` page and comparing its links to the rendered ones
-- [ ] 5.8 Teach `tests/link-integrity.test.ts` to resolve a version-less link against the line of the file it appears in, so a link to a page missing from that line fails
-- [ ] 5.9 Confirm every internal SDK link resolves inside its own line, in both lines, and that no link source text was rewritten by the cut
-- [ ] 5.10 Run `tests/link-integrity.test.ts` and the build's broken-link step, and fix what they report
+- [x] 5.1 Hand-write the line rules in `public/_redirects` — the `200` rewrite of the trailing-slash form and the `301` from the slash-less form, for the line index alone, which the spike found is the only URL of a line that needs them — plus one redirect per retired archive URL to its current series, the Markdown twins written out individually because a `:version` pattern cannot tell `v0.8.x` from `v0.8.x.md`
+- [x] 5.2 Place the block above the terminal `/* /404.html 404` rule, and below the exact rules the file's comment says must precede a `:version` pattern
+- [x] 5.3 Capture the pre-versioning URL set as a fixture and extend `scripts/check-redirects.ts` to replay it
+- [x] 5.4 Assert that no captured URL needs more than one redirect to reach its page
+- [x] 5.5 List any captured URL no rule covers as knowingly dropped, and confirm nothing outside `public/_redirects` was added to keep a URL alive
+- [x] 5.6 Write the remark plugin that prefixes a same-collection absolute link with the line of the page carrying it, leaving the current line, unversioned targets, and other collections untouched, and register it in `source.config.ts`
+- [x] 5.7 Confirm the plugin's rewrite reaches the per-page Markdown as well as the HTML, by fetching the Markdown of a `v0.16` page and comparing its links to the rendered ones
+- [x] 5.8 Teach `tests/link-integrity.test.ts` to resolve a version-less link against the line of the file it appears in, so a link to a page missing from that line fails
+- [x] 5.9 Confirm every internal SDK link resolves inside its own line, in both lines, and that no link source text was rewritten by the cut
+- [x] 5.10 Run `tests/link-integrity.test.ts` and the build's broken-link step, and fix what they report
 
 ## 6. Phase 1 — Human-facing version surfaces
 

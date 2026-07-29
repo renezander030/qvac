@@ -12,6 +12,7 @@ import rehypeKatex from 'rehype-katex';
 import remarkMath from 'remark-math';
 import codeImport from 'remark-code-import';
 import { SCHEMA_TYPES } from './src/lib/docs-json-ld';
+import remarkLineLinks from './src/lib/remark-line-links';
 
 const monorepoRoot = resolve(process.cwd(), '../..');
 
@@ -49,6 +50,7 @@ export default defineConfig({
       remarkMath,
       remarkMdxMermaid,
       [codeImport, { rootDir: monorepoRoot }],
+      remarkLineLinks,
     ],
     rehypePlugins: (v) => [rehypeKatex, ...v],
   },

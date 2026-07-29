@@ -1,15 +1,26 @@
 #!/usr/bin/env bun
 /**
- * Replays every URL the site served before the collections reorganization
- * against the built output, and fails if any of them stops resolving.
+ * Replays every URL the site used to serve against the built output, and
+ * fails if any of them stops resolving.
  *
- * The reorganization put a collection name in front of all 69 pages, so every
- * public URL changed at once and each one now depends on a redirect. A missing
- * or mis-ordered rule is invisible in the diff and only shows up as a 404 in
- * production, on a URL search engines and external links already point at.
- * `tests/fixtures/pre-move-urls.json` captured the old set from a real build;
- * this script resolves each entry through `public/_redirects` exactly as the
- * CDN would, and asserts it lands on a file that exists.
+ * Two sets are replayed, one per reorganization the site has been through:
+ *
+ *   - `tests/fixtures/pre-move-urls.json` — what the site served before the
+ *     collections reorganization put a collection name in front of all 69
+ *     pages. Every public URL changed at once, so each one depends on a
+ *     redirect.
+ *   - `tests/fixtures/pre-versioning-urls.json` — what it served before the
+ *     SDK was cut into documentation lines. Almost nothing moved: the cut
+ *     keeps the version-less paths answering from the current line, so these
+ *     URLs are expected to resolve on their own, and the fixture is here to
+ *     prove that they still do. The exceptions are the sixteen retired
+ *     patch-series archives, which left the published set and redirect.
+ *
+ * A missing or mis-ordered rule is invisible in the diff and only shows up as
+ * a 404 in production, on a URL search engines and external links already
+ * point at. Each entry is resolved through `public/_redirects` exactly as the
+ * CDN would, and asserted to land on a file that exists, within the number of
+ * redirects that set is allowed.
  *
  * The CDN behaviours modelled here are the ones `public/_redirects` documents
  * at length, because they are what makes rule order matter:
@@ -38,15 +49,35 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_WEBSITE_DIR = path.resolve(SCRIPT_DIR, "..");
 const OUT_DIR = path.join(DOCS_WEBSITE_DIR, "out");
 const REDIRECTS_PATH = path.join(DOCS_WEBSITE_DIR, "public", "_redirects");
-const FIXTURE_PATH = path.join(
-  DOCS_WEBSITE_DIR,
-  "tests",
-  "fixtures",
-  "pre-move-urls.json",
-);
+const FIXTURES_DIR = path.join(DOCS_WEBSITE_DIR, "tests", "fixtures");
 
 /** A redirect chain longer than this is treated as a loop. */
 const MAX_HOPS = 5;
+
+interface Fixture {
+  file: string;
+  label: string;
+  /**
+   * The most redirects any URL of this set may need to reach its page. A
+   * chain that grows past it still resolves, so nothing else would report
+   * it, but it means a reader is being bounced through an intermediate URL
+   * that a rule could have skipped.
+   */
+  maxRedirects: number;
+}
+
+const FIXTURES: Fixture[] = [
+  // Two hops for the retired archives: the generated block sends the
+  // pre-collections URL to its collection-scoped twin, which is the URL the
+  // retirement rule then sends to the current page. Collapsing it would mean
+  // hand-editing the generated block.
+  { file: "pre-move-urls.json", label: "pre-move", maxRedirects: 2 },
+  {
+    file: "pre-versioning-urls.json",
+    label: "pre-versioning",
+    maxRedirects: 1,
+  },
+];
 
 interface Rule {
   line: number;
@@ -240,15 +271,34 @@ async function main() {
   }
 
   const rules = parseRules(await fs.readFile(REDIRECTS_PATH, "utf-8"));
-  const inventory: UrlInventory = JSON.parse(
-    await fs.readFile(FIXTURE_PATH, "utf-8"),
-  );
-  const urls = [...inventory.pages, ...inventory.markdown];
 
   const failures: Array<{ url: string; resolution: Resolution }> = [];
-  for (const url of urls) {
-    const resolution = resolve(url, rules, built);
-    if (!resolution.ok) failures.push({ url, resolution });
+  const detours: string[] = [];
+  const replayed: string[] = [];
+
+  for (const fixture of FIXTURES) {
+    const inventory: UrlInventory = JSON.parse(
+      await fs.readFile(path.join(FIXTURES_DIR, fixture.file), "utf-8"),
+    );
+    const urls = [...inventory.pages, ...inventory.markdown];
+
+    for (const url of urls) {
+      const resolution = resolve(url, rules, built);
+      if (!resolution.ok) {
+        failures.push({ url, resolution });
+        continue;
+      }
+      const redirects = resolution.chain.length - 1;
+      if (redirects > fixture.maxRedirects) {
+        detours.push(
+          `${url} — ${redirects} redirects, ${fixture.label} allows ${fixture.maxRedirects}\n    ${resolution.chain.join(" → ")}`,
+        );
+      }
+    }
+
+    replayed.push(
+      `${urls.length} ${fixture.label} URLs (${inventory.pages.length} pages + ${inventory.markdown.length} Markdown twins)`,
+    );
   }
 
   // The rules predating this fixture — the older IA still linked from
@@ -265,11 +315,14 @@ async function main() {
 
   const shadowed = shadowedRules(rules, built);
 
-  if (failures.length > 0 || shadowed.length > 0) {
+  if (failures.length > 0 || detours.length > 0 || shadowed.length > 0) {
     for (const { url, resolution } of failures) {
       console.error(
         `✗ ${url} — ${resolution.reason}\n    ${resolution.chain.join(" → ")}`,
       );
+    }
+    for (const detour of detours) {
+      console.error(`✗ ${detour}`);
     }
     for (const rule of shadowed) {
       console.error(
@@ -277,13 +330,11 @@ async function main() {
       );
     }
     throw new Error(
-      `${failures.length} pre-move URL(s) no longer resolve, ${shadowed.length} rule(s) shadowed by a live page`,
+      `${failures.length} URL(s) no longer resolve, ${detours.length} take more redirects than allowed, ${shadowed.length} rule(s) shadowed by a live page`,
     );
   }
 
-  console.log(
-    `All ${urls.length} pre-move URLs still resolve (${inventory.pages.length} pages + ${inventory.markdown.length} Markdown twins)`,
-  );
+  console.log(`All previously served URLs still resolve: ${replayed.join(", ")}`);
 }
 
 if (import.meta.main) {
