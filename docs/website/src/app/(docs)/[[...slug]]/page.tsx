@@ -12,16 +12,13 @@ import { SmartAnchor } from '@/components/mdx-smart-card';
 import { resolveIcon } from "@/lib/resolveIcon";
 import { cloneElement, isValidElement } from "react";
 import type { AnchorHTMLAttributes } from "react";
-import { CopyPageButton, ViewOptions, VersionSelector } from '@/components/page-actions';
+import { CopyPageButton, ViewOptions } from '@/components/page-actions';
 import {
   DOCS_SITE_ORIGIN,
   buildCanonicalDocsUrl,
-  buildPageCanonicalUrl,
-  isArchivedVersionSlug,
 } from '@/lib/docs-open-graph';
 import { buildDocsJsonLd } from '@/lib/docs-json-ld';
 import { QVAC_DOC_OG_HEIGHT, QVAC_DOC_OG_WIDTH } from '@/lib/qvac-doc-og';
-import { getVersionSelectorProps } from '@/lib/versions';
 
 function TitleText({
   title,
@@ -68,7 +65,6 @@ export default async function Page(props: PageProps<'/[[...slug]]'>) {
 
   const isHomePage = !params.slug || params.slug.length === 0;
   const jsonLdBlocks = buildDocsJsonLd(page, params.slug ?? [], isHomePage);
-  const versionSelectorProps = getVersionSelectorProps(params.slug ?? []);
   const pageMarkdownUrl = page.url === '/' ? '/index.md' : `${page.url}.md`;
 
   return (
@@ -97,7 +93,6 @@ export default async function Page(props: PageProps<'/[[...slug]]'>) {
       </DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <div className="flex flex-row gap-2 items-center border-b pb-6 -mt-6">
-        {versionSelectorProps && <VersionSelector {...versionSelectorProps} />}
         <CopyPageButton markdownUrl={pageMarkdownUrl} />
         <ViewOptions markdownUrl={pageMarkdownUrl} />
       </div>
@@ -140,42 +135,22 @@ export async function generateMetadata(
   const isHomePage = !params.slug || params.slug.length === 0;
 
   const { title, description } = page.data;
-  // Self-URL of the page. Used for Open Graph / Twitter so shared links to a
-  // back-version (e.g. /reference/api/v0.7.0) still render a card that
-  // represents v0.7.0 specifically, not the latest.
+  // A page is canonical for its own line: the version-less URL for a page of
+  // the current line, and the versioned URL for a page of any other, so no
+  // line points its authority at another. The self-URL is therefore both the
+  // canonical and what Open Graph and Twitter carry.
   const selfUrl = buildCanonicalDocsUrl(params.slug);
-  // SEO canonical. For archived pages in sections whose back-versions are
-  // hidden from indexing (API summary), this points to the section's latest
-  // (`/sdk/reference/api`) so search engines consolidate authority on the
-  // canonical page. For every other page — including indexable archived
-  // release-notes — this equals `selfUrl`.
-  const linkCanonicalUrl = buildPageCanonicalUrl(params.slug);
   const ogImage = getPageImage(page);
-  // Archived back-versions in `SECTIONS_HIDDEN_FROM_INDEXING` are hidden from
-  // search engines and LLM training channels via per-page `noindex`. Combined
-  // with `linkCanonicalUrl` pointing to the section's latest, this is the
-  // textbook "this is a near-duplicate, prefer the canonical" signal. OG and
-  // Twitter still carry the self-URL so social previews remain version-accurate.
-  const isArchived = isArchivedVersionSlug(params.slug);
-  // Per-page Markdown alternate. Hidden archived pages (currently only the
-  // API summary back-versions) don't ship a `.md` sibling — see
-  // `isArchivedPage` in `docs-open-graph.ts` — so we omit the link for them
-  // to avoid advertising a 404. Every other page (including indexable
-  // archived release-notes) gets a `<link rel="alternate" type="text/markdown">`
-  // that mirrors the `Accept: text/markdown` redirect in `_redirects`.
-  const markdownAlternateUrl = isArchived
-    ? undefined
-    : `${DOCS_SITE_ORIGIN}${page.url === '/' ? '/index.md' : `${page.url}.md`}`;
+  // Mirrors the `Accept: text/markdown` redirect in `_redirects`. Every page
+  // ships a `.md` sibling, in every line.
+  const markdownAlternateUrl = `${DOCS_SITE_ORIGIN}${page.url === '/' ? '/index.md' : `${page.url}.md`}`;
 
   return {
     title: isHomePage ? { absolute: title } : title,
     description,
-    ...(isArchived && { robots: { index: false, follow: true } }),
     alternates: {
-      canonical: linkCanonicalUrl,
-      ...(markdownAlternateUrl && {
-        types: { 'text/markdown': markdownAlternateUrl },
-      }),
+      canonical: selfUrl,
+      types: { 'text/markdown': markdownAlternateUrl },
     },
     openGraph: {
       title,

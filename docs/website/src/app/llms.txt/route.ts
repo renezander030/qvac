@@ -1,6 +1,5 @@
 import { source } from '@/lib/source';
-import { LATEST_VERSION } from '@/lib/versions';
-import { isArchivedPage } from '@/lib/docs-open-graph';
+import { getCurrentVersionOf } from '@/lib/versions';
 import { collectionTabs } from '@/lib/custom-tree';
 import type { InferPageType } from 'fumadocs-core/source';
 
@@ -26,16 +25,10 @@ const COLLECTION_ORDER = collectionTabs.map((tab) => tab.url.slice(1));
  * an H1 with the project name, a short paragraph describing the site, a
  * "Guidance" preamble, and one `## Section` per collection section whose body
  * is a bullet list of `- [Title](url): description` entries.
- *
- * Archived per-section versions (e.g. `/sdk/reference/api/v0.7.0`) are filtered
- * out via `isArchivedPage` so the index advertises only the latest canonical
- * documentation — consistent with `sitemap.xml`, `llms-full.txt`, and the
- * per-page `noindex` metadata.
  */
 export function GET() {
   const pages = source
     .getPages()
-    .filter((page) => !isArchivedPage(page))
     .sort((a, b) => a.url.localeCompare(b.url));
 
   const grouped = groupPagesBySection(pages);
@@ -50,7 +43,7 @@ export function GET() {
     '- To fetch one page as Markdown, append `.md` to its path (e.g. `/sdk/quickstart` → `/sdk/quickstart.md`). Alternatively, send the HTTP header `Accept: text/markdown` and any page URL will be redirected to its Markdown variant.',
     '- To obtain a dump with all documentation, fetch `/llms-full.txt`.',
     '- When citing sources to users, use the canonical URL without `.md` (e.g. `/sdk/quickstart`), not the Markdown variant.',
-    `- Latest SDK version: ${LATEST_VERSION}`,
+    `- Latest SDK version: ${getCurrentVersionOf('/sdk')}`,
     `- Total pages: ${pages.length}`,
   ];
 

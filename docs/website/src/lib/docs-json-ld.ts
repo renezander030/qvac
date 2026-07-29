@@ -9,11 +9,7 @@
  * @see https://developers.google.com/search/docs/appearance/structured-data
  */
 
-import {
-  DOCS_SITE_ORIGIN,
-  buildCanonicalDocsUrl,
-  isArchivedVersionSlug,
-} from './docs-open-graph';
+import { DOCS_SITE_ORIGIN, buildCanonicalDocsUrl } from './docs-open-graph';
 
 export const SCHEMA_TYPES = [
   'APIReference',
@@ -155,15 +151,11 @@ function buildPageBlocks(page: DocsPageLike, slugs: string[]): JsonLdBlock[] {
   return [buildMainPageBlock(page, slugs), buildBreadcrumbList(slugs)];
 }
 
-/**
- * Returns the JSON-LD blocks to render for `page`, or `null` when no
- * structured data should be emitted (archived version bundles).
- */
+/** The JSON-LD blocks to render for `page`. */
 export function buildDocsJsonLd(
   page: DocsPageLike,
   slugs: string[],
   isHomePage: boolean,
-): JsonLdBlock[] | null {
-  if (isArchivedVersionSlug(slugs)) return null;
+): JsonLdBlock[] {
   return isHomePage ? buildHomeBlocks() : buildPageBlocks(page, slugs);
 }

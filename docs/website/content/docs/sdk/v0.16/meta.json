@@ -5,6 +5,7 @@
   "pages": [
     "---Getting started---",
     "index",
+    "about-this-version",
     "quickstart",
     "system-requirements",
     "installation",

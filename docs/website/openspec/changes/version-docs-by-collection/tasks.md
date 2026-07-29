@@ -59,17 +59,17 @@
 
 ## 6. Phase 1 — Human-facing version surfaces
 
-- [ ] 6.1 Render `SidebarTabsDropdown` from `fumadocs-ui/components/sidebar/tabs` in the docs layout's `sidebar.banner`, given the active collection's lines, and show it only on a versioned collection
-- [ ] 6.2 Build each option from the line index — `url` for the destination and `urls` for the line's pathnames, so `isTabActive` resolves the active line — and confirm the browser receives no per-page version data
-- [ ] 6.3 Derive each option's title from the manifest entry's folder — `v0.17 (latest)` for the group, plain `v0.16` otherwise — so the suffix follows a cut with no edit beyond the entry itself
-- [ ] 6.4 Point each option at the same path under its line, falling back to that line's index when the page does not exist there
-- [ ] 6.5 Delete `VersionSelector`, `getVersionSelectorProps`, and the section machinery in `src/lib/versions.ts` that the retired patch-series archives were the only consumer of
-- [ ] 6.6 Confirm the switch does not reload the document and does not remount the navbar, the collection bar, or the sidebar container
-- [ ] 6.7 Confirm no switcher appears above the page tree on Platform and Resources
-- [ ] 6.8 Confirm the narrow-viewport order in the sidebar header — Fumadocs' collection dropdown from `sidebar.tabs`, then the line switcher, then the tree — and that the dropdown still marks the collection active from a page of a non-current line
-- [ ] 6.9 Set each page's canonical URL to its own line, the version-less path for the current line and the versioned path for the others
-- [ ] 6.10 Add a switching test asserting that every page of every line lands on its equivalent or on the selected line's index
-- [ ] 6.11 Add a page to `v0.16` that `(v0.17)` does not carry, list it in that line's `meta.json` only, and confirm it resolves, appears in that line's sidebar and artifacts, and leaves the current line untouched
+- [x] 6.1 Render `SidebarTabsDropdown` from `fumadocs-ui/components/sidebar/tabs` in the docs layout's `sidebar.banner`, given the active collection's lines, and show it only on a versioned collection
+- [x] 6.2 Build each option from the line index — `url` for the destination and `urls` for the line's pathnames, so `isTabActive` resolves the active line — and confirm the browser receives no per-page version data
+- [x] 6.3 Derive each option's title from the manifest entry's folder — `v0.17 (latest)` for the group, plain `v0.16` otherwise — so the suffix follows a cut with no edit beyond the entry itself
+- [x] 6.4 Point each option at the same path under its line, falling back to that line's index when the page does not exist there
+- [x] 6.5 Delete `VersionSelector`, `getVersionSelectorProps`, and the section machinery in `src/lib/versions.ts` that the retired patch-series archives were the only consumer of
+- [x] 6.6 Confirm the switch does not reload the document and does not remount the navbar, the collection bar, or the sidebar container
+- [x] 6.7 Confirm no switcher appears above the page tree on Platform and Resources
+- [x] 6.8 Confirm the narrow-viewport order in the sidebar header — Fumadocs' collection dropdown from `sidebar.tabs`, then the line switcher, then the tree — and that the dropdown still marks the collection active from a page of a non-current line
+- [x] 6.9 Set each page's canonical URL to its own line, the version-less path for the current line and the versioned path for the others
+- [x] 6.10 Add a switching test asserting that every page of every line lands on its equivalent or on the selected line's index
+- [x] 6.11 Add a page to `v0.16` that `(v0.17)` does not carry, list it in that line's `meta.json` only, and confirm it resolves, appears in that line's sidebar and artifacts, and leaves the current line untouched
 
 ## 7. Phase 2 — Agent artifacts per line
 

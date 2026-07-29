@@ -6,6 +6,8 @@ import { SiHuggingface } from '@icons-pack/react-simple-icons';
 import { KeetIcon } from '@/components/keet-icon';
 import KeetRoomModalMount from '@/components/keet-modal';
 import { buildCustomTree, collectionTabs } from '@/lib/custom-tree';
+import { collectionLines } from '@/lib/lines';
+import { LineSwitcher } from '@/components/line-switcher';
 import { source } from '@/lib/source';
 import {
   AskAISearchToggleLarge,
@@ -64,7 +66,19 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         nav={{ ...base.nav, mode: 'top' }}
         tabMode="navbar"
         links={linkItems}
-        sidebar={{ tabs: collectionTabs }}
+        sidebar={{
+          tabs: collectionTabs,
+          // The banner slot is the last child of the sidebar header, so the
+          // switcher lands after the collection control and directly above
+          // the tree on every viewport, with no conditional layout of ours.
+          banner: (
+            <LineSwitcher
+              collections={collectionLines(
+                source.getPages().map((page) => page.url),
+              )}
+            />
+          ),
+        }}
         tree={{
           name: 'docs',
           $id: 'latest',
