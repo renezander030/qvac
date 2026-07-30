@@ -10,9 +10,10 @@
  * without touching the manifest, or the other way round.
  */
 import { describe, it, expect } from 'vitest'
-import { readdirSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import * as path from 'node:path'
 import {
+  checkIndexVersions,
   checkVersionStructure,
   type DirectoryListing,
 } from '@/lib/version-structure'
@@ -139,6 +140,56 @@ describe('version structure check', () => {
   })
 })
 
+describe('package index against the manifest', () => {
+  const index = (versions: string[]) =>
+    new Map([
+      [
+        cliPackage.path,
+        versions
+          .map((version) => `- [${version}](${cliPackage.path}/${version}/)`)
+          .join('\n'),
+      ],
+    ])
+
+  it('accepts an index linking exactly the declared versions', () => {
+    expect(checkIndexVersions(index(['v0.9', 'v0.8']), [cliPackage])).toEqual([])
+  })
+
+  it('accepts the slash-less form of the same link', () => {
+    const text = new Map([
+      [cliPackage.path, `[v0.9](${cliPackage.path}/v0.9) [v0.8](${cliPackage.path}/v0.8)`],
+    ])
+    expect(checkIndexVersions(text, [cliPackage])).toEqual([])
+  })
+
+  it('names a declared version the index forgot', () => {
+    const problems = checkIndexVersions(index(['v0.9']), [cliPackage])
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toContain('v0.8')
+    expect(problems[0]).toContain('does not link it')
+  })
+
+  it('names a version the index links and the manifest does not declare', () => {
+    const problems = checkIndexVersions(index(['v0.9', 'v0.8', 'v0.7']), [cliPackage])
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toContain('v0.7')
+    expect(problems[0]).toContain('no manifest entry declares')
+  })
+
+  it('reports a package with no index at all', () => {
+    const problems = checkIndexVersions(new Map([[cliPackage.path, null]]), [
+      cliPackage,
+    ])
+    expect(problems).toEqual([
+      `${cliPackage.path}: has no index page, so its versions cannot be reached`,
+    ])
+  })
+
+  it('skips a collection, which is entered through the switcher', () => {
+    expect(checkIndexVersions(new Map(), [sdk])).toEqual([])
+  })
+})
+
 describe('the manifest against the content tree', () => {
   it('declares exactly the version folders that exist', () => {
     const listings = new Map<string, DirectoryListing | null>()
@@ -163,5 +214,20 @@ describe('the manifest against the content tree', () => {
     }
 
     expect(checkVersionStructure(listings)).toEqual([])
+  })
+
+  it('links from every package index exactly the versions declared', () => {
+    const indexes = new Map<string, string | null>()
+
+    for (const software of DOCUMENTED_SOFTWARE) {
+      if (software.kind !== 'package') continue
+      const directory = path.join(contentRoot, software.path.replace(/^\//, ''))
+      const found = ['index.mdx', 'index.md']
+        .map((name) => path.join(directory, name))
+        .find((file) => existsSync(file))
+      indexes.set(software.path, found ? readFileSync(found, 'utf8') : null)
+    }
+
+    expect(checkIndexVersions(indexes)).toEqual([])
   })
 })

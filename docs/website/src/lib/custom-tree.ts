@@ -1,6 +1,7 @@
 import type { Node, Root } from 'fumadocs-core/page-tree';
 import {
   computeSectionVersionUrl,
+  documentedSoftwareOfKind,
   getCurrentLine,
   getDocumentedSoftware,
   versionOfFolder,
@@ -37,6 +38,35 @@ import { resolveIcon } from '@/lib/resolveIcon';
  *     along with its pages — the folder is the whole of it.
  */
 
+/**
+ * The inventory's entries, derived from the manifest rather than declared.
+ * Everything the sidebar needs is already there — the package's published
+ * name, where it is documented, and the versions published for it — and a
+ * second list would be one more thing to forget when a release is added.
+ *
+ * A package is entered at its index, never at a version: the inventory
+ * publishes no current line, so its version-less path belongs to the index
+ * and every version, the newest included, is addressed by its own segment.
+ */
+function inventoryChildren(): Node[] {
+  return documentedSoftwareOfKind('package').map((software) => ({
+    name: software.package,
+    type: 'folder',
+    index: {
+      type: 'page',
+      name: software.package,
+      url: software.path,
+    },
+    children: software.versions.map((version) => ({
+      type: 'page',
+      name: version.version,
+      // No version is served bare here, hence the null: every entry carries
+      // its segment, and with it the trailing slash a dotted segment needs.
+      url: computeSectionVersionUrl(software.path, version.version, null),
+    })),
+  }));
+}
+
 const platformChildren: Node[] = [
   {
     name: 'Overview',
@@ -71,6 +101,17 @@ const platformChildren: Node[] = [
   {
     type: 'separator',
     name: 'Inventory',
+  },
+  {
+    name: 'Software inventory',
+    type: 'folder',
+    icon: resolveIcon('Package'),
+    index: {
+      type: 'page',
+      name: 'Software inventory',
+      url: '/platform/inventory',
+    },
+    children: inventoryChildren(),
   },
   {
     name: 'Addons',

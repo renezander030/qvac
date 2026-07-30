@@ -281,6 +281,27 @@
 /provider/v0.8     /provider/v0.8/              301
 
 # ======================================================================
+# SOFTWARE INVENTORY VERSIONS
+# ----------------------------------------------------------------------
+# Every inventory version is a dotted final segment, for the same reason a
+# line index is: the version-less path belongs to the package index, so no
+# version is ever served bare and all of them need these rules.
+#
+# Written with a placeholder rather than listed, which is the opposite of
+# the choice above. A line index is one URL per collection and a cut is
+# worth seeing in the diff; here the pattern is scoped to one package's
+# folder, where every first-level path IS a version, so it claims nothing
+# it should not — and documenting a release stays two edits.
+/platform/inventory/sdk/:version/               /platform/inventory/sdk/:version/index.html               200
+/platform/inventory/sdk/:version                /platform/inventory/sdk/:version/                          301
+/platform/inventory/sdk-python/:version/        /platform/inventory/sdk-python/:version/index.html        200
+/platform/inventory/sdk-python/:version         /platform/inventory/sdk-python/:version/                   301
+/platform/inventory/cli/:version/               /platform/inventory/cli/:version/index.html               200
+/platform/inventory/cli/:version                /platform/inventory/cli/:version/                          301
+/platform/inventory/ai-sdk-provider/:version/   /platform/inventory/ai-sdk-provider/:version/index.html   200
+/platform/inventory/ai-sdk-provider/:version    /platform/inventory/ai-sdk-provider/:version/              301
+
+# ======================================================================
 # PERMANENT REDIRECTS DUE TO CONTENT MOVE
 # ----------------------------------------------------------------------
 # Everything above is pattern-based (wildcards / :placeholders).

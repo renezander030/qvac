@@ -108,18 +108,18 @@
 
 ## 10. Phase 4 — Software Inventory
 
-- [ ] 10.1 Create the inventory index under `/platform/inventory/`, stating what the inventory documents, how it differs from the product collections, and listing the four packages by published name
-- [ ] 10.2 Read each package's two most recent released READMEs out of git — `@qvac/sdk` and the Python client from `sdk-v0.17.0` and `sdk-v0.16.0`, `@qvac/ai-sdk-provider` from `ai-sdk-provider-v0.4.0` and `ai-sdk-provider-v0.3.0`, `@qvac/cli` from `cli-v0.9.0` and `cli-v0.8.1` — and paste each into its version folder by hand as `.md`, every version folder plain and none of them a group
-- [ ] 10.3 Take the SDK's and the Python client's `v0.17` README from `main` if `sdk-v0.17.0` has not been cut when the pages are written, since `main` is what that tag will carry, and record on the page which of the two it came from
-- [ ] 10.4 Write each package's index at its version-less path: published name, one sentence on what the package is, repository and registry links, and the version list linking each version page and its GitHub release
-- [ ] 10.5 Add frontmatter to each version page naming the tag it came from, a link to that GitHub release, and a link back to the package index
-- [ ] 10.6 Point each package's manifest entries at the folders as created, and confirm the correspondence check covers the inventory exactly as it covers the collections
-- [ ] 10.7 Extend that check so a package index must link exactly the versions the manifest declares, failing on an extra or a missing one
-- [ ] 10.8 Fix each README's repository-relative links by hand — `../bare-sdk/README.md`, `./docs/serve-openai.md` and the rest — pointing them at GitHub on that version's tag, and leave in-page anchors alone
-- [ ] 10.9 Confirm all four render, in particular what the Markdown processor does with the SDK's raw HTML banner and the Python client's `<version>` in prose, neither of which MDX would have accepted
-- [ ] 10.10 Add the `200`/`301` rules covering the inventory's dotted version segments, following the `:version` form, and confirm every version page resolves in both forms
-- [ ] 10.11 Confirm no line switcher renders on an inventory page, and that the link checks and the leakage gate accept the inventory
-- [ ] 10.12 Confirm Platform remains unversioned as a collection despite the per-package versions inside it
+- [x] 10.1 Create the inventory index under `/platform/inventory/`, stating what the inventory documents, how it differs from the product collections, and listing the four packages by published name
+- [x] 10.2 Read each package's two most recent released READMEs out of git — `@qvac/sdk` and the Python client from `sdk-v0.17.0` and `sdk-v0.16.0`, `@qvac/ai-sdk-provider` from `ai-sdk-provider-v0.4.0` and `ai-sdk-provider-v0.3.0`, `@qvac/cli` from `cli-v0.9.0` and `cli-v0.8.1` — and paste each into its version folder by hand as `.md`, every version folder plain and none of them a group
+- [x] 10.3 Take the SDK's and the Python client's `v0.17` README from `main` if `sdk-v0.17.0` has not been cut when the pages are written, since `main` is what that tag will carry, and record on the page which of the two it came from
+- [x] 10.4 Write each package's index at its version-less path: published name, one sentence on what the package is, repository and registry links, and the version list linking each version page and its GitHub release
+- [x] 10.5 Add frontmatter to each version page naming the tag it came from, a link to that GitHub release, and a link back to the package index
+- [x] 10.6 Point each package's manifest entries at the folders as created, and confirm the correspondence check covers the inventory exactly as it covers the collections
+- [x] 10.7 Extend that check so a package index must link exactly the versions the manifest declares, failing on an extra or a missing one
+- [x] 10.8 Fix each README's repository-relative links by hand — `../bare-sdk/README.md`, `./docs/serve-openai.md` and the rest — pointing them at GitHub on that version's tag, and leave in-page anchors alone
+- [x] 10.9 Confirm all four render, in particular what the Markdown processor does with the SDK's raw HTML banner and the Python client's `<version>` in prose, neither of which MDX would have accepted
+- [x] 10.10 Add the `200`/`301` rules covering the inventory's dotted version segments, following the `:version` form, and confirm every version page resolves in both forms
+- [x] 10.11 Confirm no line switcher renders on an inventory page, and that the link checks and the leakage gate accept the inventory
+- [x] 10.12 Confirm Platform remains unversioned as a collection despite the per-package versions inside it
 
 ## 11. Gates
 

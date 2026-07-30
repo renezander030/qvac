@@ -157,6 +157,59 @@ function checkPackage(
 }
 
 /**
+ * The same correspondence, one level up: an inventory package is entered at an
+ * index that lists its versions, and that list is written by hand. A version
+ * whose folder and manifest entry both exist is still unreachable if the index
+ * never links it — the inventory offers no switcher, so the index is the only
+ * way in.
+ *
+ * `indexes` is keyed by the software's documented path and holds the index
+ * page's text, or `null` where the page is missing. Collections are skipped:
+ * they are entered through the switcher, not through an index.
+ */
+export function checkIndexVersions(
+  indexes: ReadonlyMap<string, string | null>,
+  software: readonly DocumentedSoftware[] = DOCUMENTED_SOFTWARE,
+): string[] {
+  return software
+    .filter((entry) => entry.kind === 'package')
+    .flatMap((entry) => checkIndex(entry, indexes.get(entry.path) ?? null));
+}
+
+function checkIndex(
+  software: DocumentedSoftware,
+  text: string | null,
+): string[] {
+  if (text === null) {
+    return [`${software.path}: has no index page, so its versions cannot be reached`];
+  }
+
+  const linked = linkedVersions(software.path, text);
+  const declared: string[] = software.versions.map((version) => version.version);
+
+  return [
+    ...declared
+      .filter((version) => !linked.has(version))
+      .map(
+        (version) =>
+          `${software.path}: version ${version} is declared but the index does not link it`,
+      ),
+    ...[...linked]
+      .filter((version) => !declared.includes(version))
+      .map(
+        (version) =>
+          `${software.path}: the index links version ${version}, which no manifest entry declares`,
+      ),
+  ];
+}
+
+/** The versions of this package an index page links, in either slash form. */
+function linkedVersions(path: string, text: string): Set<string> {
+  const pattern = new RegExp(`\\]\\(${path}/(v[^/)]+)/?\\)`, 'g');
+  return new Set([...text.matchAll(pattern)].map((match) => match[1]));
+}
+
+/**
  * Whether a directory name is trying to be a version folder. Patch-shaped
  * names count, so they are reported as malformed rather than ignored as
  * ordinary content.
