@@ -90,31 +90,6 @@ const platformChildren: Node[] = [
   },
 ];
 
-const providerChildren: Node[] = [
-  {
-    name: 'Overview',
-    url: '/provider',
-    type: 'page',
-    icon: resolveIcon('DoorOpen'),
-  },
-  {
-    name: 'HTTP server',
-    url: '/provider/http-server',
-    type: 'page',
-    icon: resolveIcon('Server'),
-  },
-  {
-    name: 'Connect tools',
-    url: '/provider/http-server/connection',
-    type: 'page',
-  },
-  {
-    name: 'Integration',
-    url: '/provider/http-server/integration',
-    type: 'page',
-  },
-];
-
 /**
  * Resources indexes material about using QVAC that is not the reference
  * documentation itself: what is published outside this site, and how to
@@ -168,7 +143,6 @@ const COLLECTIONS: Collection[] = [
     name: 'Provider',
     description: 'Run and connect the model provider server',
     path: '/provider',
-    children: providerChildren,
   },
   {
     name: 'Resources',

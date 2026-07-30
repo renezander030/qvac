@@ -1,0 +1,6 @@
+{
+  "title": "Provider",
+  "description": "Run and connect the model provider server",
+  "root": true,
+  "pages": ["index", "...http-server"]
+}

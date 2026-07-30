@@ -97,14 +97,14 @@
 
 ## 9. Phase 3 — Provider
 
-- [ ] 9.1 Move the Provider pages into `content/docs/provider/(v0.9)/`, anchored on `@qvac/cli` `0.9.0`, point its manifest entry at that folder, and confirm no Provider URL changed
-- [ ] 9.2 Convert the Provider subtree into `meta.json` files inside its line and splice its root through the Phase 1 helper, with no Provider-specific branch
-- [ ] 9.3 Confirm the single-line state behaves correctly before adding the second: the switcher lists one line, resolution and artifacts work, and nothing assumes a second line exists
-- [ ] 9.4 Copy `(v0.9)` to `v0.8`, the release before it, declare that entry, and confirm it needs no code change
-- [ ] 9.5 Note in `v0.8` that it starts as the `0.9` pages, since documentation for `0.8` was never written separately, and correct anything materially wrong for that release
-- [ ] 9.6 Confirm `v0.8` behaves as any older line does in its URLs, switcher entry, artifacts, and retrieval attributes, and that the switcher labels `(v0.9)` as `v0.9 (latest)`
-- [ ] 9.7 Extend the redirects, agent artifacts, and retrieval metadata to the Provider with no new infrastructure
-- [ ] 9.8 Record any change the Provider forced on shared code, since that is the measure of whether the infrastructure was built SDK-shaped
+- [x] 9.1 Move the Provider pages into `content/docs/provider/(v0.9)/`, anchored on `@qvac/cli` `0.9.0`, point its manifest entry at that folder, and confirm no Provider URL changed
+- [x] 9.2 Convert the Provider subtree into `meta.json` files inside its line and splice its root through the Phase 1 helper, with no Provider-specific branch
+- [x] 9.3 Confirm the single-line state behaves correctly before adding the second: the switcher lists one line, resolution and artifacts work, and nothing assumes a second line exists
+- [x] 9.4 Copy `(v0.9)` to `v0.8`, the release before it, declare that entry, and confirm it needs no code change
+- [x] 9.5 Note in `v0.8` that it starts as the `0.9` pages, since documentation for `0.8` was never written separately, and correct anything materially wrong for that release
+- [x] 9.6 Confirm `v0.8` behaves as any older line does in its URLs, switcher entry, artifacts, and retrieval attributes, and that the switcher labels `(v0.9)` as `v0.9 (latest)`
+- [x] 9.7 Extend the redirects, agent artifacts, and retrieval metadata to the Provider with no new infrastructure
+- [x] 9.8 Record any change the Provider forced on shared code, since that is the measure of whether the infrastructure was built SDK-shaped
 
 ## 10. Phase 4 — Software Inventory
 
