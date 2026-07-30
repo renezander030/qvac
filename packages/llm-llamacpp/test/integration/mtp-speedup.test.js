@@ -1,39 +1,45 @@
 'use strict'
 // MTP speed benchmark: measures what draft-mtp speculative decoding actually
-// buys, as a WITHIN-RUN ratio of spec-off vs spec-on decode time.
+// buys, as a WITHIN-RUN ratio of spec-off vs spec-on decode time, across a
+// MODEL SIZE x PROMPT CLASS matrix.
+//
+// Why a matrix. Two variables dominate whether speculation pays, and measuring
+// one point tells you almost nothing:
+//   - Acceptance rate is prompt-dependent. The same 0.8B model accepts ~0.83 of
+//     its drafts on a short factual question and ~0.37 on open-ended prose.
+//   - Speculation's benefit scales with model size. Its win comes from
+//     verifying N+1 tokens for roughly the cost of 1, which holds when decode
+//     is memory-bandwidth-bound. On a small model the fixed per-decode cost
+//     (graph launch, thread sync) dominates instead, and fabric's drafter
+//     issues one llama_decode per drafted token -- so a round costs ~4 launches
+//     to produce ~2 tokens against ~2 launches for plain decoding. That
+//     overhead amortises as the model grows.
 //
 // Why a ratio and not absolute numbers: CI runners are shared and their
 // absolute throughput drifts run-to-run by more than the effect being
-// measured, so a number compared against a previous run's number is noise.
-// Both configs are therefore loaded in ONE process and their timed runs are
-// INTERLEAVED (off, on, off, on, ...), so thermal drift and neighbour load hit
-// both arms roughly equally and the ratio stays meaningful even when the
-// absolute figures do not. Same technique the VLM benchmark uses for Device
-// Farm's shared device pool.
+// measured. Both arms are therefore loaded together per cell and their timed
+// runs INTERLEAVED (off, on, off, on), so drift and neighbour load hit both
+// arms roughly equally. Verified: an isolated control (one addon at a time,
+// alternating order) reproduced the co-loaded result, and the ordering effect
+// was under 2%.
 //
-// Why decode WALL-CLOCK for identical output rather than stats.TPS: the two
-// paths do not necessarily count `generatedTokens` the same way (it derives
-// from the n_eval perf counter, and under speculation several tokens are
-// emitted per decode), so a TPS ratio risks comparing different quantities.
-// Because greedy MTP is output-identical to greedy plain decoding, timing the
-// production of *the same answer* is apples-to-apples regardless of how the
-// counters are defined. Both figures are reported so the discrepancy — if any
-// — is visible in the data rather than assumed.
+// Why decode WALL-CLOCK rather than stats.TPS: llama only books a decode as
+// generation when the batch holds exactly one token, so before the addon
+// corrected it, every verify batch landed in the PROMPT bucket -- TPS read 0
+// for a full answer. Timing the work directly avoids depending on that
+// bookkeeping, and the wall-clock cross-check below catches any recurrence.
 //
 // This test REPORTS timing; it does not gate on it. The only assertions are
 // the deterministic ones (both arms produced output, speculation demonstrably
 // on in one and off in the other). Greedy output-equivalence is pinned
-// separately in mtp.test.js on a short prompt — see the note at that assertion
-// below for why it does not belong on this one.
-// A throughput threshold would be a flaky gate: two desktop CI legs run
-// CPU-only, where speculative decoding is expected to gain little or nothing
-// (its win comes from verifying N+1 tokens for roughly the cost of 1, which
-// holds when decode is memory-bandwidth-bound, not compute-bound).
+// separately in mtp.test.js on a short prompt — deliberately NOT here, because
+// a long open-ended prompt provokes backend-specific greedy tie-breaks.
 //
 // Opt-in via QVAC_RUN_MTP_BENCH=true, and excluded from the mobile group
 // coverage requirement in scripts/generate-mobile-integration-tests.js
 // (isOverrideOnly), so neither the normal desktop integration suite nor the
-// Device Farm groups pay for it.
+// Device Farm groups pay for it. The 2B/4B models are `warm: false` in
+// models.manifest.json so CI never pre-downloads 6.7GB it will not use.
 
 const path = require('bare-path')
 const proc = require('bare-process')
@@ -44,29 +50,67 @@ const { recordPerformance, isDarwinX64, isLinuxArm64 } = require('./_perf-helper
 const useCpu = isDarwinX64 || isLinuxArm64
 const benchOptIn = !!(proc.env && proc.env.QVAC_RUN_MTP_BENCH === 'true')
 
-// Deliberately no `url`: the mobile manifest generator discovers staging
+// All Q8_0 so model SIZE is the only variable across rows. Mixing quants would
+// confound it: lower-bit weights decode faster and push the workload toward
+// compute-bound, which independently reduces speculative benefit.
+//
+// Deliberately no `url` fields: the mobile manifest generator discovers staging
 // models by scanning for `{ name, url }` pairs, and this benchmark is
-// desktop/opt-in only. Desktop resolves the download from
-// test/integration/models.manifest.json, where this model is already pinned
-// by mtp.test.js.
-const MODEL = { name: 'Qwen3.5-0.8B-MTP-Q8_0.gguf' }
+// desktop/opt-in only. Desktop resolves downloads from
+// test/integration/models.manifest.json, where all three are SHA-pinned.
+const MODELS = [
+  { label: '0.8B', name: 'Qwen3.5-0.8B-MTP-Q8_0.gguf' },
+  { label: '2B', name: 'Qwen3.5-2B-MTP-Q8_0.gguf' },
+  { label: '4B', name: 'Qwen3.5-4B-MTP-Q8_0.gguf' }
+]
 
-// Long enough that decode dominates: MTP's benefit is per-decoded-token, so a
-// short generation is mostly prefill and understates it. Reasoning is off so
-// the measured span is plain decode.
-const N_PREDICT = 256
-const CTX_SIZE = 2048
-// Timed pairs. Each pair is one spec-off + one spec-on run of the same prompt.
-const PAIRS = 3
-
-const PROMPT = [
-  { role: 'system', content: 'You are a helpful assistant.' },
+// Three classes spanning the acceptance range, since acceptance is the
+// dominant term in whether speculation pays.
+const PROMPTS = [
   {
-    role: 'user',
-    content:
-      'Explain, in several complete sentences, how quantization reduces the memory footprint of a neural network and what trade-offs it introduces.'
+    label: 'short-factual',
+    // Same prompt as mtp.test.js: a short, high-confidence answer where the
+    // drafter is rarely wrong (~0.83 acceptance observed on 0.8B).
+    messages: [
+      { role: 'system', content: 'You are a helpful assistant.' },
+      { role: 'user', content: 'What is the capital of France? Answer in one complete sentence.' }
+    ]
+  },
+  {
+    label: 'structured',
+    // Highly predictable continuation: the token sequence is largely
+    // determined by the format, which is the regime speculation is built for.
+    messages: [
+      { role: 'system', content: 'You are a helpful assistant.' },
+      {
+        role: 'user',
+        content:
+          'List the numbers from 1 to 40. Output exactly one line per number, formatted as "N. number N", with no commentary.'
+      }
+    ]
+  },
+  {
+    label: 'open-ended',
+    // Free-form prose: many plausible next tokens, so the drafter is wrong
+    // often (~0.37 acceptance observed on 0.8B). MTP's unfavourable end.
+    messages: [
+      { role: 'system', content: 'You are a helpful assistant.' },
+      {
+        role: 'user',
+        content:
+          'Explain, in several complete sentences, how quantization reduces the memory footprint of a neural network and what trade-offs it introduces.'
+      }
+    ]
   }
 ]
+
+// 128 rather than 256: the matrix is 3 models x 3 prompts x (2 warmup + 6
+// timed) = 72 generations, and the 4B arm would otherwise dominate the
+// runtime. 128 still keeps decode well clear of prefill.
+const N_PREDICT = 128
+const CTX_SIZE = 2048
+// Timed pairs per cell. Each pair is one spec-off + one spec-on run.
+const PAIRS = 3
 
 function baseConfig(withSpec) {
   const config = {
@@ -83,23 +127,23 @@ function baseConfig(withSpec) {
   return config
 }
 
-async function loadAddon(t, modelPath, withSpec) {
+// Loaded and unloaded per cell rather than registered on the test: 4B Q8_0 is
+// 4.6GB and holding three models' worth of contexts at once would be wasteful
+// (and on a constrained box, self-defeating).
+async function loadAddon(modelPath, withSpec) {
   const addon = new LlmLlamacpp({
     files: { model: [modelPath] },
     config: baseConfig(withSpec),
-    logger: console,
+    logger: { info() {}, error() {}, warn() {}, debug() {} },
     opts: { stats: true }
   })
   await addon.load()
-  t.teardown(async () => {
-    await addon.unload().catch(() => {})
-  })
   return addon
 }
 
 // One timed generation. Returns the output plus wall-clock total and the
 // decode span (total minus time-to-first-token), which is the part MTP acts on.
-async function timedRun(addon) {
+async function timedRun(addon, messages) {
   const chunks = []
   const ticker = setInterval(() => {}, 50)
   // Date.now() to match the rest of the perf harness (_benchmark-perf.js,
@@ -108,7 +152,7 @@ async function timedRun(addon) {
   // Bare runtime may not expose.
   const startedAt = Date.now()
   try {
-    const response = await addon.run(PROMPT)
+    const response = await addon.run(messages)
     await response
       .onUpdate((data) => {
         chunks.push(data)
@@ -135,122 +179,122 @@ function median(values) {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
 }
 
-safeTest(
-  'MTP speed: within-run decode-time ratio vs non-speculative',
-  { skip: !benchOptIn, timeout: 1_800_000 },
-  async (t) => {
-    const [modelName, dirPath] = await ensureModel({ modelName: MODEL.name })
-    const modelPath = path.join(dirPath, modelName)
-
-    // Both arms live in one process for the whole benchmark so the comparison
-    // is against the same machine in the same thermal state.
-    const plainAddon = await loadAddon(t, modelPath, false)
-    const specAddon = await loadAddon(t, modelPath, true)
-
+// Measure one (model, prompt) cell. Returns the row for the summary table.
+async function measureCell(t, modelPath, model, prompt) {
+  const plainAddon = await loadAddon(modelPath, false)
+  const specAddon = await loadAddon(modelPath, true)
+  try {
     // Warm up each arm once, untimed: the first generation on a fresh context
     // pays kernel/allocator warmup that would otherwise land entirely on
     // whichever arm happens to run first.
-    await timedRun(plainAddon)
-    await timedRun(specAddon)
+    await timedRun(plainAddon, prompt.messages)
+    await timedRun(specAddon, prompt.messages)
 
     const plainRuns = []
     const specRuns = []
-    let plainOutput = null
-    let specOutput = null
-
     for (let pair = 1; pair <= PAIRS; pair++) {
       // Interleaved, not grouped — see the header note on drift.
-      const plain = await timedRun(plainAddon)
-      const spec = await timedRun(specAddon)
-      plainRuns.push(plain)
-      specRuns.push(spec)
-      plainOutput = plain.output
-      specOutput = spec.output
-      console.log(
-        `  pair ${pair}: non-spec decode=${plain.decodeMs.toFixed(0)}ms spec decode=${spec.decodeMs.toFixed(0)}ms ` +
-          `(accepted ${spec.stats.draftAccepted}/${spec.stats.draftTotal})`
-      )
+      plainRuns.push(await timedRun(plainAddon, prompt.messages))
+      specRuns.push(await timedRun(specAddon, prompt.messages))
     }
 
     const plainDecode = median(plainRuns.map((r) => r.decodeMs))
     const specDecode = median(specRuns.map((r) => r.decodeMs))
-    const ratio = specDecode > 0 ? plainDecode / specDecode : 0
-    // Cross-check on total wall-clock, which depends on nothing the addon
-    // reports. decodeMs subtracts TTFT, so it is only trustworthy while TTFT
-    // is; an earlier revision of the addon booked every verify batch as PROMPT
-    // eval, inflating spec TTFT ~20x, and that subtraction turned a real
-    // slowdown into an apparent 1.37x speedup. If these two ratios disagree,
-    // believe the wall-clock one and suspect the stats.
     const plainWall = median(plainRuns.map((r) => r.totalMs))
     const specWall = median(specRuns.map((r) => r.totalMs))
-    const wallRatio = specWall > 0 ? plainWall / specWall : 0
     const lastSpec = specRuns[specRuns.length - 1]
+    const lastPlain = plainRuns[plainRuns.length - 1]
     const acceptRate =
       lastSpec.stats.draftTotal > 0 ? lastSpec.stats.draftAccepted / lastSpec.stats.draftTotal : 0
 
-    console.log('  ---- MTP speed summary ----')
-    console.log(`  median decode  non-spec : ${plainDecode.toFixed(0)}ms`)
-    console.log(`  median decode  spec     : ${specDecode.toFixed(0)}ms`)
-    console.log(`  decode speedup (x)      : ${ratio.toFixed(3)}  (>1 means MTP is faster)`)
-    console.log(`  wall-clock speedup (x)  : ${wallRatio.toFixed(3)}  (assumption-free check)`)
+    const row = {
+      model: model.label,
+      prompt: prompt.label,
+      plainDecode,
+      specDecode,
+      // decodeMs subtracts TTFT, so it is only trustworthy while TTFT is. The
+      // wall ratio depends on nothing the addon reports; if the two disagree,
+      // believe wall-clock and suspect the stats.
+      decodeRatio: specDecode > 0 ? plainDecode / specDecode : 0,
+      wallRatio: specWall > 0 ? plainWall / specWall : 0,
+      plainWall,
+      specWall,
+      acceptRate,
+      draftAccepted: lastSpec.stats.draftAccepted,
+      draftTotal: lastSpec.stats.draftTotal,
+      plainTps: lastPlain.stats.TPS,
+      specTps: lastSpec.stats.TPS,
+      chars: lastSpec.output.length,
+      backend: lastSpec.stats.backendDevice === 'gpu' ? 'gpu' : 'cpu'
+    }
+
     console.log(
-      `  median wall  non-spec   : ${plainWall.toFixed(0)}ms   spec: ${specWall.toFixed(0)}ms`
-    )
-    console.log(`  acceptance rate         : ${acceptRate.toFixed(2)}`)
-    console.log(`  chars generated         : ${specOutput.length}`)
-    // Reported alongside the wall-clock numbers so the two can be compared: if
-    // these disagree with the decode-time ratio, stats.TPS/generatedTokens are
-    // counting decodes rather than emitted tokens on the speculative path.
-    console.log(
-      `  stats TPS non-spec=${plainRuns[plainRuns.length - 1].stats.TPS} spec=${lastSpec.stats.TPS}`
-    )
-    console.log(
-      `  stats generatedTokens non-spec=${plainRuns[plainRuns.length - 1].stats.generatedTokens} spec=${lastSpec.stats.generatedTokens}`
+      `  [${model.label} / ${prompt.label}] decode ${plainDecode.toFixed(0)}ms -> ${specDecode.toFixed(0)}ms ` +
+        `(${row.decodeRatio.toFixed(3)}x), wall ${row.wallRatio.toFixed(3)}x, ` +
+        `accept ${lastSpec.stats.draftAccepted}/${lastSpec.stats.draftTotal} = ${acceptRate.toFixed(2)}, ` +
+        `TPS ${Number(lastPlain.stats.TPS).toFixed(1)} -> ${Number(lastSpec.stats.TPS).toFixed(1)}`
     )
 
-    // Tag from the backend the addon actually resolved, NOT from the
-    // requested device. `useCpu` is a CI-shaped heuristic (which legs lack a
-    // usable GPU), so on any other machine it guesses: a linux-x64 box with no
-    // GPU asks for "gpu", ggml reports "No devices found" and silently runs on
-    // CPU, and a label derived from the request would title the row [gpu]
-    // while measuring CPU. stats.backendDevice is what the run really used.
-    const deviceTag = specRuns[0].stats.backendDevice === 'gpu' ? '[gpu]' : '[cpu]'
-    recordPerformance(`${deviceTag} mtp-speedup non-speculative`, plainRuns[0].totalMs, {
-      stats: plainRuns[0].stats
-    })
-    recordPerformance(`${deviceTag} mtp-speedup draft-mtp`, specRuns[0].totalMs, {
-      stats: specRuns[0].stats
-    })
+    // Tag from the backend the addon actually resolved, NOT the requested
+    // device: a box with no usable GPU asks for "gpu", ggml reports "No
+    // devices found" and silently runs on CPU.
+    const tag = `[${row.backend}] mtp-speedup ${model.label}/${prompt.label}`
+    recordPerformance(`${tag} non-speculative`, lastPlain.totalMs, { stats: lastPlain.stats })
+    recordPerformance(`${tag} draft-mtp`, lastSpec.totalMs, { stats: lastSpec.stats })
 
-    // Assertions are deterministic only. The ratio above is DATA, not a gate —
-    // asserting a speedup threshold on a shared CI runner (CPU-only on two
-    // desktop legs) would be flaky by construction.
-    t.ok(specOutput.length > 0, 'speculative arm produced output')
-    t.ok(plainOutput.length > 0, 'non-speculative arm produced output')
-    // NOT asserting byte-equality of the two arms here. Greedy equivalence is
-    // a real property of speculative decoding and IS pinned — by
-    // 'MTP output matches the non-speculative output token-for-token' in
-    // mtp.test.js, which uses a short, high-confidence prompt. This benchmark
-    // deliberately uses a long open-ended prompt so decode dominates the
-    // timing, which is exactly the wrong shape for an equality check: ~210
-    // tokens give ~25x more chances to hit a near-tie, and llama's logits are
-    // not bit-identical across batch shapes (the verify batch decodes N+1
-    // positions at once, the non-speculative path one at a time). Observed on
-    // linux-x64, deterministically on both matrix legs: identical for ~25
-    // tokens, then "lower-precision integers" vs "integers or floats", after
-    // which greedy paths separate for good — while the same prompt stayed
-    // identical on Metal. That is a tie-break difference, not a decode bug,
-    // and gating a timing benchmark on it only produces backend-specific
-    // false failures.
+    // Deterministic assertions only — the ratios are DATA, never a gate.
+    t.ok(
+      lastPlain.output.length > 0,
+      `[${model.label}/${prompt.label}] non-spec arm produced output`
+    )
+    t.ok(lastSpec.output.length > 0, `[${model.label}/${prompt.label}] spec arm produced output`)
     t.ok(
       lastSpec.stats.draftTotal > 0,
-      `speculative arm really drafted (draftTotal=${lastSpec.stats.draftTotal})`
+      `[${model.label}/${prompt.label}] spec arm really drafted (draftTotal=${lastSpec.stats.draftTotal})`
     )
     t.is(
-      plainRuns[plainRuns.length - 1].stats.draftTotal,
+      lastPlain.stats.draftTotal,
       0,
-      'non-speculative arm drafted nothing (draftTotal=0)'
+      `[${model.label}/${prompt.label}] non-spec arm drafted nothing`
     )
-    t.ok(ratio > 0, `decode-time ratio computed (${ratio.toFixed(3)}x)`)
+    return row
+  } finally {
+    await plainAddon.unload().catch(() => {})
+    await specAddon.unload().catch(() => {})
+  }
+}
+
+safeTest(
+  'MTP speed: decode-time ratio vs non-speculative across model sizes and prompt classes',
+  { skip: !benchOptIn, timeout: 3_600_000 },
+  async (t) => {
+    const rows = []
+    for (const model of MODELS) {
+      const [modelName, dirPath] = await ensureModel({ modelName: model.name })
+      const modelPath = path.join(dirPath, modelName)
+      for (const prompt of PROMPTS) {
+        rows.push(await measureCell(t, modelPath, model, prompt))
+      }
+    }
+
+    console.log('')
+    console.log('==== MTP speedup matrix (>1.000 means MTP is FASTER) ====')
+    console.log('model  prompt          decode-x  wall-x  accept  plain-TPS  spec-TPS  backend')
+    for (const r of rows) {
+      console.log(
+        `${r.model.padEnd(6)} ${r.prompt.padEnd(15)} ` +
+          `${r.decodeRatio.toFixed(3).padStart(8)} ${r.wallRatio.toFixed(3).padStart(7)} ` +
+          `${r.acceptRate.toFixed(2).padStart(7)} ${Number(r.plainTps).toFixed(1).padStart(10)} ` +
+          `${Number(r.specTps).toFixed(1).padStart(9)}  ${r.backend}`
+      )
+    }
+    const best = rows.reduce((a, b) => (b.wallRatio > a.wallRatio ? b : a))
+    console.log(
+      `best cell: ${best.model}/${best.prompt} at ${best.wallRatio.toFixed(3)}x ` +
+        `(acceptance ${best.acceptRate.toFixed(2)}, backend ${best.backend})`
+    )
+    console.log(
+      `cells where MTP was faster: ${rows.filter((r) => r.wallRatio > 1).length}/${rows.length}`
+    )
   }
 )
