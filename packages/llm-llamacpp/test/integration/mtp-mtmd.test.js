@@ -15,7 +15,7 @@
 const fs = require('bare-fs')
 const path = require('bare-path')
 const LlmLlamacpp = require('../../index.js')
-const { ensureModel, safeTest, getMediaPath } = require('./utils')
+const { ensureModel, safeTest, getMediaPath, cleanupIntegrationCacheFiles } = require('./utils')
 const { attachSpecLogger } = require('./spec-logger')
 const os = require('bare-os')
 
@@ -176,6 +176,68 @@ safeTest(
     t.ok(
       stats.draftAccepted > 0,
       `MTP still drafts after a multi-sub-batch text prefill (draftAccepted=${stats.draftAccepted})`
+    )
+  }
+)
+
+safeTest(
+  'mtmd context: a speculative turn after loadCache keeps the media KV surplus',
+  { timeout: 600_000 },
+  async (t) => {
+    // Under M-RoPE an image occupies MORE KV cells than positions, so a
+    // media-bearing session has cacheTokens > pos. specSetPos used to assign
+    // `cacheTokens = pos` outright, which discards that surplus.
+    //
+    // In-session that looked unreachable: evaluating an image disables
+    // speculation for the rest of the session, so media and drafting never
+    // coexist. But loadCache does NOT disable speculation, so a cache saved
+    // from a media session can be restored into a fresh MTP-enabled context —
+    // and the first speculative text turn would then silently drop the
+    // surplus, under-reporting KV occupancy. The context then slides late (and
+    // can hard-fail near the ceiling) and a later saveCache writes a header
+    // that fails its own cacheTokens verification on reload.
+    //
+    // Session A: image + text, then persist.
+    // cacheKey must be an ABSOLUTE .bin path — same idiom as mtp.test.js /
+    // cache-state-machine.test.js.
+    const [, dirPath] = await ensureModel({ modelName: MODEL.name })
+    const cachePath = path.join(dirPath, 'mtp-mtmd-media-cache.bin')
+    t.teardown(() => cleanupIntegrationCacheFiles(cachePath))
+    const cacheOpts = { cacheKey: cachePath, saveCacheToDisk: true }
+
+    const producer = await loadMtmdMtp(t)
+    const imageBytes = new Uint8Array(fs.readFileSync(getMediaPath('elephant.jpg')))
+    const imageResponse = await producer.run(
+      [
+        { role: 'system', content: 'You are a helpful assistant.' },
+        { role: 'user', type: 'media', content: imageBytes },
+        { role: 'user', content: 'Describe this image in one sentence.' }
+      ],
+      cacheOpts
+    )
+    await collectResponse(imageResponse)
+    const mediaStats = imageResponse.stats
+    console.log(`  media turn: CacheTokens=${mediaStats.CacheTokens}`)
+    t.ok(mediaStats.CacheTokens > 0, 'media session recorded KV cells')
+
+    // Session B: fresh context (speculation active — no image seen here),
+    // restore the media-bearing cache, then take a speculative TEXT turn.
+    const consumer = await loadMtmdMtp(t)
+    const restored = await consumer.run(TEXT_PROMPT, cacheOpts)
+    await collectResponse(restored)
+    const afterStats = restored.stats
+    console.log(
+      `  after speculative text turn: CacheTokens=${afterStats.CacheTokens} ` +
+        `draftTotal=${afterStats.draftTotal}`
+    )
+
+    // The load-bearing assertion: a speculative text turn only ADDS text
+    // positions, so KV occupancy must not shrink below what the restored
+    // media session already used. With the absolute assign it collapsed to the
+    // logical position, dropping every media cell.
+    t.ok(
+      afterStats.CacheTokens >= mediaStats.CacheTokens,
+      `KV occupancy did not lose the media surplus (${mediaStats.CacheTokens} -> ${afterStats.CacheTokens})`
     )
   }
 )

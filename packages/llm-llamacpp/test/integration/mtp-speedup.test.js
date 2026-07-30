@@ -21,7 +21,10 @@
 // — is visible in the data rather than assumed.
 //
 // This test REPORTS timing; it does not gate on it. The only assertions are
-// the deterministic ones (identical output, speculation demonstrably on/off).
+// the deterministic ones (both arms produced output, speculation demonstrably
+// on in one and off in the other). Greedy output-equivalence is pinned
+// separately in mtp.test.js on a short prompt — see the note at that assertion
+// below for why it does not belong on this one.
 // A throughput threshold would be a flaky gate: two desktop CI legs run
 // CPU-only, where speculative decoding is expected to gain little or nothing
 // (its win comes from verifying N+1 tokens for roughly the cost of 1, which
@@ -223,7 +226,22 @@ safeTest(
     // asserting a speedup threshold on a shared CI runner (CPU-only on two
     // desktop legs) would be flaky by construction.
     t.ok(specOutput.length > 0, 'speculative arm produced output')
-    t.is(specOutput, plainOutput, 'both arms produced identical output (greedy equivalence)')
+    t.ok(plainOutput.length > 0, 'non-speculative arm produced output')
+    // NOT asserting byte-equality of the two arms here. Greedy equivalence is
+    // a real property of speculative decoding and IS pinned — by
+    // 'MTP output matches the non-speculative output token-for-token' in
+    // mtp.test.js, which uses a short, high-confidence prompt. This benchmark
+    // deliberately uses a long open-ended prompt so decode dominates the
+    // timing, which is exactly the wrong shape for an equality check: ~210
+    // tokens give ~25x more chances to hit a near-tie, and llama's logits are
+    // not bit-identical across batch shapes (the verify batch decodes N+1
+    // positions at once, the non-speculative path one at a time). Observed on
+    // linux-x64, deterministically on both matrix legs: identical for ~25
+    // tokens, then "lower-precision integers" vs "integers or floats", after
+    // which greedy paths separate for good — while the same prompt stayed
+    // identical on Metal. That is a tie-break difference, not a decode bug,
+    // and gating a timing benchmark on it only produces backend-specific
+    // false failures.
     t.ok(
       lastSpec.stats.draftTotal > 0,
       `speculative arm really drafted (draftTotal=${lastSpec.stats.draftTotal})`

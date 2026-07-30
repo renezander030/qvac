@@ -343,9 +343,23 @@ private:
       const std::function<void(const std::string&)>& outputCallback) override;
   [[nodiscard]] llama_pos specPos() const override { return current_.pos; }
   void specSetPos(llama_pos pos) override {
-    // Media never reaches the speculative path, so one KV cell per position.
-    current_.pos = pos;
-    current_.cacheTokens = pos;
+    // Delta, not absolute assign. The speculative loop only ever adds or trims
+    // TEXT positions (one KV cell each), so move `cacheTokens` by the same
+    // amount `pos` moves — which is exactly what advanceTextSpan does, and it
+    // handles the loop's backwards moves (trimming a rejected draft tail) too.
+    //
+    // Assigning `cacheTokens = pos` outright looks equivalent because media
+    // never enters the speculative path IN-SESSION: evaluating an image
+    // disables speculation for the rest of the session (see evalMediaSegment).
+    // But `loadCache` does NOT disable speculation, so a cache saved from a
+    // media-bearing session — where M-RoPE media occupies more KV cells than
+    // positions, i.e. cacheTokens > pos — can be restored into a fresh
+    // MTP-enabled context. The first speculative text turn would then discard
+    // that surplus, under-reporting KV occupancy: the context slides late and
+    // can hard-fail within `surplus` positions of the ceiling, and a later
+    // saveCache writes a header that fails its own cacheTokens verification on
+    // reload.
+    advanceTextSpan(pos);
   }
   [[nodiscard]] llama_pos specCtxCeiling() const override {
     return ctxCeiling();
