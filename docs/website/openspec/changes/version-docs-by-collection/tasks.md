@@ -123,12 +123,12 @@
 
 ## 11. Gates
 
-- [ ] 11.1 Run the full `build`, including the broken-link step and `scripts/check-redirects.ts`, and confirm it passes
-- [ ] 11.2 Run every vitest suite and confirm the new structure, switching, leakage, and metadata gates pass
-- [ ] 11.3 Measure the build after the page count doubles, and record whether the OG image route needs attention
-- [ ] 11.4 Walk the built site: switch lines within a collection, follow a fallback, cross collections, and confirm the selector label and canonical URL match the line
-- [ ] 11.5 Watch the network panel across a switch in both directions and confirm no document request, only payload fetches
-- [ ] 11.6 Confirm every derived surface carries line-scoped URLs and none lists a pre-versioning URL as canonical
-- [ ] 11.7 Repeat the walk on a narrow viewport, confirming the selector and the collection switcher remain reachable
-- [ ] 11.8 Perform one cut by hand end to end on a scratch branch — rename the group, copy it forward, update the manifest, adjust the redirects — and confirm the new line's sidebar stands up from the copied `meta.json` files with no edit to `custom-tree.ts`
-- [ ] 11.9 Record those steps as the procedure a later change can automate
+- [x] 11.1 Run the full `build`, including the broken-link step and `scripts/check-redirects.ts`, and confirm it passes
+- [x] 11.2 Run every vitest suite and confirm the new structure, switching, leakage, and metadata gates pass
+- [x] 11.3 Measure the build after the page count doubles, and record whether the OG image route needs attention
+- [x] 11.4 Walk the built site: switch lines within a collection, follow a fallback, cross collections, and confirm the selector label and canonical URL match the line
+- [x] 11.5 Watch the network panel across a switch in both directions and confirm no document request, only payload fetches
+- [x] 11.6 Confirm every derived surface carries line-scoped URLs and none lists a pre-versioning URL as canonical
+- [x] 11.7 Repeat the walk on a narrow viewport, confirming the selector and the collection switcher remain reachable
+- [x] 11.8 Perform one cut by hand end to end on a scratch branch — rename the group, copy it forward, update the manifest, adjust the redirects — and confirm the new line's sidebar stands up from the copied `meta.json` files with no edit to `custom-tree.ts`
+- [x] 11.9 Record those steps as the procedure a later change can automate

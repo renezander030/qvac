@@ -104,6 +104,28 @@ describe('version structure check', () => {
     ).toBe(true)
   })
 
+  it('rejects a third line, naming the oldest', () => {
+    const problems = check(
+      { ...sdk, versions: [...sdk.versions, { version: 'v0.15', folder: 'v0.15' }] },
+      listing(['(v0.17)', 'v0.16', 'v0.15']),
+    )
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toContain('3 lines declared')
+    expect(problems[0]).toContain('retire v0.15')
+  })
+
+  it('accepts a package carrying more than two versions, which is a catalogue', () => {
+    expect(
+      check(
+        {
+          ...cliPackage,
+          versions: [...cliPackage.versions, { version: 'v0.7', folder: 'v0.7' }],
+        },
+        listing(['v0.9', 'v0.8', 'v0.7']),
+      ),
+    ).toEqual([])
+  })
+
   it('rejects a patch-shaped version folder', () => {
     const problems = check(cliPackage, listing(['v0.9', 'v0.8', 'v0.9.1']))
     expect(problems.some((problem) => problem.includes('v0.9.1'))).toBe(true)
