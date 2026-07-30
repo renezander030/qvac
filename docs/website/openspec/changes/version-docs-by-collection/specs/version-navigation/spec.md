@@ -2,7 +2,7 @@
 
 ### Requirement: The line switcher sits at the top of the sidebar
 
-Every page of a versioned collection SHALL offer a documentation-line switcher in the sidebar header, below whatever controls that header already carries and above the collection's navigation tree, so it reads as a property of the tree below it rather than of the page. The control MUST be the same one the sidebar already uses to switch collection, configured with the lines instead of the collections, so the two read as one mechanism at two scopes and neither carries styling of its own. It MUST list the collection's published lines and show the active one as its label. A line SHALL be labelled `v<major>.<minor>`, with the current line carrying the ` (latest)` suffix. A page of an unversioned collection MUST NOT show it.
+Every page of a versioned collection SHALL offer a documentation-line switcher in the sidebar header, below whatever controls that header already carries and above the collection's navigation tree, so it reads as a property of the tree below it rather than of the page. The control MUST be the same one the sidebar already uses to switch collection, configured with the lines instead of the collections, so the two read as one mechanism at two scopes and neither carries styling of its own. It MUST list the collection's published lines and show the active one as its label. A line SHALL be labelled `v<major>.<minor>`, with the current line carrying the ` (latest)` suffix. It SHALL serve the inventory's packages on the same terms, which the inventory capability states. A page that documents no versioned software MUST NOT show it.
 
 #### Scenario: A versioned page offers the switcher
 
@@ -40,13 +40,13 @@ Every page of a versioned collection SHALL offer a documentation-line switcher i
 
 #### Scenario: Unversioned pages have no switcher
 
-- **WHEN** a Platform or Resources page is rendered
+- **WHEN** a Platform page outside the inventory, or a Resources page, is rendered
 - **THEN** no line switcher appears above the navigation tree
 
 #### Scenario: The switcher ships no per-page data to the browser
 
 - **WHEN** the switcher is rendered
-- **THEN** the only version data it carries is the published lines of each versioned collection
+- **THEN** the only version data it carries is the published lines of each versioned collection and the versions of each inventory package
 - **AND** the destination of a selection is derived from the current path rather than from a per-page table
 
 ### Requirement: Selecting a line switches the whole context

@@ -41,30 +41,77 @@ import { resolveIcon } from '@/lib/resolveIcon';
 /**
  * The inventory's entries, derived from the manifest rather than declared.
  * Everything the sidebar needs is already there — the package's published
- * name, where it is documented, and the versions published for it — and a
- * second list would be one more thing to forget when a release is added.
+ * name and where it is documented — and a second list would be one more thing
+ * to forget when a package is added.
  *
- * A package is entered at its index, never at a version: the inventory
- * publishes no current line, so its version-less path belongs to the index
- * and every version, the newest included, is addressed by its own segment.
+ * One entry per package, and none per version: a package's versions are moved
+ * between with the switcher, the same control a versioned collection's lines
+ * use, so the sidebar carries the inventory's shape and the switcher carries
+ * the version. A package is entered at its index, never at a version, because
+ * the inventory publishes no current line — its version-less path belongs to
+ * the index, and every README is addressed by its own segment.
  */
 function inventoryChildren(): Node[] {
   return documentedSoftwareOfKind('package').map((software) => ({
+    type: 'page',
     name: software.package,
-    type: 'folder',
-    index: {
-      type: 'page',
-      name: software.package,
-      url: software.path,
-    },
-    children: software.versions.map((version) => ({
-      type: 'page',
-      name: version.version,
-      // No version is served bare here, hence the null: every entry carries
-      // its segment, and with it the trailing slash a dotted segment needs.
-      url: computeSectionVersionUrl(software.path, version.version, null),
-    })),
+    url: software.path,
   }));
+}
+
+/** The inventory's place in the Platform navigation. */
+const inventoryFolder: Node = {
+  name: 'Software inventory',
+  type: 'folder',
+  icon: resolveIcon('Package'),
+  index: {
+    type: 'page',
+    name: 'Software inventory',
+    url: '/platform/inventory',
+  },
+  children: inventoryChildren(),
+};
+
+/**
+ * A root folder per inventory version page, holding the Platform navigation.
+ *
+ * The sidebar beside a page is the last root folder on the path Fumadocs
+ * finds by matching the pathname against the tree, page URL for page URL. A
+ * page named nowhere in the tree matches nothing, and the sidebar falls back
+ * to listing the roots themselves — the reader lands on a README and is shown
+ * a list of collections. Since a version page is deliberately absent from the
+ * inventory's entries, it is named here instead, as the index of a root of
+ * its own, which the sidebar renders as the Platform tree it would have
+ * rendered anyway. A root's index is not itself an entry, so naming it here
+ * puts nothing back in the sidebar.
+ *
+ * The inventory folder is opened, because a folder opens itself only for a
+ * page it lists and it lists no version. Left shut, a reader who followed a
+ * package into a README would be shown a Platform tree with no sign of where
+ * they had gone.
+ */
+function inventoryVersionRoots(): Node[] {
+  return documentedSoftwareOfKind('package').flatMap((software) =>
+    software.versions.map(
+      (version): Node => ({
+        type: 'folder',
+        root: true,
+        name: `${software.package} ${version.version}`,
+        index: {
+          type: 'page',
+          name: software.package,
+          // Slash-less, the form `searchPath` compares against: it normalizes
+          // the pathname it is given but not the URL it reads off the node.
+          // What the browser requests is Next's business, and it writes the
+          // trailing slash back into every href it renders.
+          url: `${software.path}/${version.version}`,
+        },
+        children: platformChildren.map((node) =>
+          node === inventoryFolder ? { ...inventoryFolder, defaultOpen: true } : node,
+        ),
+      }),
+    ),
+  );
 }
 
 const platformChildren: Node[] = [
@@ -102,17 +149,7 @@ const platformChildren: Node[] = [
     type: 'separator',
     name: 'Inventory',
   },
-  {
-    name: 'Software inventory',
-    type: 'folder',
-    icon: resolveIcon('Package'),
-    index: {
-      type: 'page',
-      name: 'Software inventory',
-      url: '/platform/inventory',
-    },
-    children: inventoryChildren(),
-  },
+  inventoryFolder,
   {
     name: 'Addons',
     type: 'folder',
@@ -296,9 +333,12 @@ function collectionRoots(collection: Collection, pageTree: Root): Node[] {
  * content layer and testable without it.
  */
 export function buildCustomTree(pageTree: Root): Node[] {
-  return COLLECTIONS.flatMap((collection) =>
-    collectionRoots(collection, pageTree),
-  );
+  return [
+    ...COLLECTIONS.flatMap((collection) =>
+      collectionRoots(collection, pageTree),
+    ),
+    ...inventoryVersionRoots(),
+  ];
 }
 
 /**

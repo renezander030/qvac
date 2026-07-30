@@ -6,7 +6,7 @@ import { SiHuggingface } from '@icons-pack/react-simple-icons';
 import { KeetIcon } from '@/components/keet-icon';
 import KeetRoomModalMount from '@/components/keet-modal';
 import { buildCustomTree, collectionTabs } from '@/lib/custom-tree';
-import { collectionLines } from '@/lib/lines';
+import { collectionLines, packageLines } from '@/lib/lines';
 import { LineSwitcher } from '@/components/line-switcher';
 import { source } from '@/lib/source';
 import {
@@ -73,9 +73,10 @@ export default function Layout({ children }: LayoutProps<'/'>) {
           // the tree on every viewport, with no conditional layout of ours.
           banner: (
             <LineSwitcher
-              collections={collectionLines(
-                source.getPages().map((page) => page.url),
-              )}
+              collections={[
+                ...collectionLines(source.getPages().map((page) => page.url)),
+                ...packageLines(),
+              ]}
             />
           ),
         }}

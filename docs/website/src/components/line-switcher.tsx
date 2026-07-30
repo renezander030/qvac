@@ -18,7 +18,10 @@ import {
  * collection control and before the navigation tree — the switcher belongs to
  * the tree below it, since every entry there changes when the line changes.
  *
- * Nothing renders outside a versioned collection.
+ * It serves two scopes with one control: a versioned collection's lines, and
+ * an inventory package's versions — which differ only in that the package
+ * offers its index alongside them, since no version of a package is served
+ * version-less. Nothing renders anywhere else.
  */
 export function LineSwitcher({
   collections,

@@ -69,14 +69,32 @@ Each documented version SHALL be one folder named `v<major>.<minor>` under its p
 - **WHEN** two packages of the same product are documented
 - **THEN** each carries the version numbers it publishes under, which need not match
 
-### Requirement: Versions are chosen from the package index, not a switcher
+### Requirement: A package's versions are moved between with the switcher
 
-Because the inventory uses no folder group and sits inside an unversioned collection, the documentation-line switcher SHALL NOT appear on inventory pages. Moving between versions SHALL be done from the package index, and every version page MUST link back to it.
+A package's pages SHALL offer the same switcher a versioned collection's lines use, listing the package's index alongside every version it publishes and showing the reader's own as its label. The index is listed because it is where a package is entered and no version is served version-less: without it the control would have nothing selected on the page the reader arrives at, and would not appear at all. The inventory's sidebar entries SHALL be one per package, entered at its index, and none per version — the sidebar carries the inventory's shape and the switcher carries the version. The package index SHALL still enumerate the versions, and every version page MUST link back to it.
 
-#### Scenario: No switcher on an inventory page
+#### Scenario: A package page offers the switcher
+
+- **WHEN** a package index or version page is rendered
+- **THEN** the switcher is offered above the navigation tree, as on a versioned collection's page
+- **AND** its label reads the version being read, or `All versions` on the index
+
+#### Scenario: The switcher lists the index and every version
+
+- **WHEN** the switcher is opened on a package documented at `v0.17` and `v0.16`
+- **THEN** it lists `All versions`, `v0.17`, and `v0.16`
+- **AND** no entry carries the ` (latest)` suffix, which the inventory does not use
+
+#### Scenario: No version appears in the sidebar
+
+- **WHEN** the inventory's entries are rendered
+- **THEN** each package appears once, at its index
+
+#### Scenario: A version page keeps its collection's sidebar
 
 - **WHEN** a package version page is rendered
-- **THEN** no line switcher is offered
+- **THEN** the sidebar is the navigation of the collection the inventory sits in, with the inventory open
+- **AND** it is never the fallback listing of collections a page absent from the navigation tree would produce
 
 #### Scenario: Every version page returns to the index
 

@@ -18,8 +18,10 @@ import {
   collectionOfPath,
   destinationsFor,
   lineTitle,
+  packageLines,
   type CollectionLines,
 } from '@/lib/lines'
+import { documentedSoftwareOfKind } from '@/lib/versions'
 
 const contentRoot = path.resolve(__dirname, '..', 'content', 'docs')
 
@@ -105,6 +107,57 @@ describe('switching lines', () => {
 
   it('offers nothing outside a versioned collection', () => {
     expect(collectionOfPath([synthetic], '/platform/architecture')).toBeNull()
+  })
+})
+
+describe('switching versions inside an inventory package', () => {
+  const packages = packageLines()
+  const published = new Set(contentUrls())
+
+  it('offers one entry per package version, and the index besides', () => {
+    for (const software of documentedSoftwareOfKind('package')) {
+      const found = packages.find((entry) => entry.path === software.path)
+      expect(found, `no switcher entries for ${software.path}`).toBeDefined()
+      expect(found?.lines.map((line) => line.title)).toEqual([
+        'All versions',
+        ...software.versions.map((version) => version.version),
+      ])
+    }
+  })
+
+  it('selects the index, so the control shows on the page a package is entered at', () => {
+    for (const software of packages) {
+      const index = software.lines[0]
+      expect(index.urls).toEqual([software.path])
+    }
+  })
+
+  it('lands on a page the site publishes, from the index and from a version', () => {
+    for (const software of packages) {
+      for (const line of software.lines) {
+        for (const pathname of line.urls) {
+          for (const { line: target, url } of destinationsFor(
+            software,
+            pathname,
+          )) {
+            const landed = url.replace(/\/$/, '') || '/'
+            expect(
+              published.has(landed),
+              `${pathname} → ${target.title} lands on ${url}, which is not published`,
+            ).toBe(true)
+            expect(target.urls).toEqual([landed])
+          }
+        }
+      }
+    }
+  })
+
+  it('claims every page of the packages it describes', () => {
+    for (const software of packages) {
+      for (const pathname of [...software.lines].flatMap((line) => line.urls)) {
+        expect(collectionOfPath(packages, pathname)?.path).toBe(software.path)
+      }
+    }
   })
 })
 

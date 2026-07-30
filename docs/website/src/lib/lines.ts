@@ -17,7 +17,11 @@ import {
  */
 
 export interface Line {
-  version: string;
+  /**
+   * The version this entry publishes, or `null` for one that publishes none —
+   * an inventory package's index, which is what its version-less path serves.
+   */
+  version: string | null;
   /** True for the line served at the collection's version-less paths. */
   current: boolean;
   /** What the switcher shows, the current line marked as such. */
@@ -86,6 +90,45 @@ export function collectionLines(pageUrls: string[]): CollectionLines[] {
   });
 }
 
+/**
+ * What the switcher offers inside an inventory package: the index first, then
+ * every version the package publishes.
+ *
+ * The index is an entry like any other because it is where a package is
+ * entered, and a control whose selection is empty renders nothing — without
+ * it the switcher would appear only after the reader had already found a
+ * version by other means. It is marked `current` in the sense the field
+ * carries: it is what the version-less path serves.
+ *
+ * Read from the manifest alone, with no page list, because a package version
+ * publishes exactly one page and the structure check already holds the
+ * manifest and the folders to each other.
+ */
+export function packageLines(): CollectionLines[] {
+  return documentedSoftwareOfKind('package').map((software) => ({
+    path: software.path,
+    lines: [
+      {
+        version: null,
+        current: true,
+        title: 'All versions',
+        index: software.path,
+        urls: [software.path],
+      },
+      ...software.versions.map((entry): Line => {
+        const version = versionOfFolder(entry.folder);
+        return {
+          version,
+          current: false,
+          title: version,
+          index: computeSectionVersionUrl(software.path, version, null),
+          urls: [`${software.path}/${version}`],
+        };
+      }),
+    ],
+  }));
+}
+
 /** The collection the reader is in, or null outside a versioned one. */
 export function collectionOfPath(
   collections: CollectionLines[],
@@ -112,7 +155,9 @@ export function destinationsFor(
   const path = normalize(pathname);
   const tail = path.slice(collection.path.length);
   const claimed = collection.lines.find(
-    (line) => tail === `/${line.version}` || tail.startsWith(`/${line.version}/`),
+    (line) =>
+      line.version !== null &&
+      (tail === `/${line.version}` || tail.startsWith(`/${line.version}/`)),
   );
   const rest = claimed ? tail.slice(`/${claimed.version}`.length) : tail;
 
