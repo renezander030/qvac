@@ -172,6 +172,15 @@ safeTest(
     const plainDecode = median(plainRuns.map((r) => r.decodeMs))
     const specDecode = median(specRuns.map((r) => r.decodeMs))
     const ratio = specDecode > 0 ? plainDecode / specDecode : 0
+    // Cross-check on total wall-clock, which depends on nothing the addon
+    // reports. decodeMs subtracts TTFT, so it is only trustworthy while TTFT
+    // is; an earlier revision of the addon booked every verify batch as PROMPT
+    // eval, inflating spec TTFT ~20x, and that subtraction turned a real
+    // slowdown into an apparent 1.37x speedup. If these two ratios disagree,
+    // believe the wall-clock one and suspect the stats.
+    const plainWall = median(plainRuns.map((r) => r.totalMs))
+    const specWall = median(specRuns.map((r) => r.totalMs))
+    const wallRatio = specWall > 0 ? plainWall / specWall : 0
     const lastSpec = specRuns[specRuns.length - 1]
     const acceptRate =
       lastSpec.stats.draftTotal > 0 ? lastSpec.stats.draftAccepted / lastSpec.stats.draftTotal : 0
@@ -180,6 +189,10 @@ safeTest(
     console.log(`  median decode  non-spec : ${plainDecode.toFixed(0)}ms`)
     console.log(`  median decode  spec     : ${specDecode.toFixed(0)}ms`)
     console.log(`  decode speedup (x)      : ${ratio.toFixed(3)}  (>1 means MTP is faster)`)
+    console.log(`  wall-clock speedup (x)  : ${wallRatio.toFixed(3)}  (assumption-free check)`)
+    console.log(
+      `  median wall  non-spec   : ${plainWall.toFixed(0)}ms   spec: ${specWall.toFixed(0)}ms`
+    )
     console.log(`  acceptance rate         : ${acceptRate.toFixed(2)}`)
     console.log(`  chars generated         : ${specOutput.length}`)
     // Reported alongside the wall-clock numbers so the two can be compared: if
