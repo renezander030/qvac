@@ -192,7 +192,13 @@ safeTest(
       `  stats generatedTokens non-spec=${plainRuns[plainRuns.length - 1].stats.generatedTokens} spec=${lastSpec.stats.generatedTokens}`
     )
 
-    const deviceTag = useCpu ? '[cpu]' : '[gpu]'
+    // Tag from the backend the addon actually resolved, NOT from the
+    // requested device. `useCpu` is a CI-shaped heuristic (which legs lack a
+    // usable GPU), so on any other machine it guesses: a linux-x64 box with no
+    // GPU asks for "gpu", ggml reports "No devices found" and silently runs on
+    // CPU, and a label derived from the request would title the row [gpu]
+    // while measuring CPU. stats.backendDevice is what the run really used.
+    const deviceTag = specRuns[0].stats.backendDevice === 'gpu' ? '[gpu]' : '[cpu]'
     recordPerformance(`${deviceTag} mtp-speedup non-speculative`, plainRuns[0].totalMs, {
       stats: plainRuns[0].stats
     })
