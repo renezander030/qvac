@@ -58,6 +58,7 @@ const { recordPerformance, isDarwinX64, isLinuxArm64 } = require('./_perf-helper
 
 const useCpu = isDarwinX64 || isLinuxArm64
 const benchOptIn = !!(proc.env && proc.env.QVAC_RUN_MTP_BENCH === 'true')
+const largeOptIn = !!(proc.env && proc.env.QVAC_MTP_BENCH_LARGE === 'true')
 
 // All Q8_0 so model SIZE is the only variable across rows. Mixing quants would
 // confound it: lower-bit weights decode faster and push the workload toward
@@ -69,11 +70,31 @@ const benchOptIn = !!(proc.env && proc.env.QVAC_RUN_MTP_BENCH === 'true')
 // test/integration/models.manifest.json, where all three are SHA-pinned.
 // `bytes` mirrors models.manifest.json and is used only for the memory report /
 // spill warning, so a reader can compare peak resident against their VRAM.
-const MODELS = [
+const BASE_MODELS = [
   { label: '0.8B', name: 'Qwen3.5-0.8B-MTP-Q8_0.gguf', bytes: 833592128 },
   { label: '2B', name: 'Qwen3.5-2B-MTP-Q8_0.gguf', bytes: 2076674880 },
   { label: '4B', name: 'Qwen3.5-4B-MTP-Q8_0.gguf', bytes: 4610580192 }
 ]
+
+// Opt-in second tier, gated separately from QVAC_RUN_MTP_BENCH because it costs
+// ~39GB of extra weights and roughly 30-45 min of extra runtime -- folding it
+// into the existing flag would silently change the cost of every run.
+//
+// Motivation: on the 0.8B-4B sweep the speedup-vs-size trend disagrees between
+// GPU hosts (rising to 2.12x on an RTX 5070, flat at ~1.44x on a Mac Studio).
+// Either the Mac saturates early or 4B is too small a top end to read the trend
+// from; extending to 9B/27B separates the two.
+//
+// Q8_0 like every other row, so size stays the only variable. Note the 27B is
+// published by unsloth rather than prithivMLmods (the source of the other four)
+// -- it is the only publisher of a 27B MTP GGUF. Both are SHA-pinned in
+// models.manifest.json and marked `warm: false` so CI never pre-downloads them.
+const LARGE_MODELS = [
+  { label: '9B', name: 'Qwen3.5-9B-MTP-Q8_0.gguf', bytes: 9786060544 },
+  { label: '27B', name: 'Qwen3.5-27B-MTP-Q8_0.gguf', bytes: 29047084096 }
+]
+
+const MODELS = largeOptIn ? [...BASE_MODELS, ...LARGE_MODELS] : BASE_MODELS
 
 // Three classes spanning the acceptance range, since acceptance is the
 // dominant term in whether speculation pays.

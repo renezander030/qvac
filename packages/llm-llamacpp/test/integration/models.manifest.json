@@ -52,6 +52,22 @@
       "bytes": 4610580192,
       "warm": false
     },
+    "Qwen3.5-9B-MTP-Q8_0.gguf": {
+      "urls": [
+        "https://huggingface.co/prithivMLmods/Qwen3.5-9B-MTP-GGUF/resolve/8cb5bdfc8128b40f77703e7a60c5e059ed317d32/Qwen3.5-9B.Q8_0.gguf"
+      ],
+      "sha256": "e03ba14675a89524373401929aba1335df88173c5469bf91689ea0e8317e4b11",
+      "bytes": 9786060544,
+      "warm": false
+    },
+    "Qwen3.5-27B-MTP-Q8_0.gguf": {
+      "urls": [
+        "https://huggingface.co/unsloth/Qwen3.5-27B-MTP-GGUF/resolve/88fb5663d646bc78e1140648e8d8cb7d3e849908/Qwen3.5-27B-Q8_0.gguf"
+      ],
+      "sha256": "b7e29e183fc6baf55f6ed331e22747f5d7b225e461eeac9ab27b76ed836af7c8",
+      "bytes": 29047084096,
+      "warm": false
+    },
     "Qwen3.5-0.8B-MTP-mmproj-q8_0.gguf": {
       "urls": [
         "https://huggingface.co/prithivMLmods/Qwen3.5-0.8B-MTP-GGUF/resolve/e84039e503be9c81c5bfe3f0b0d00a7636894d9d/Qwen3.5-0.8B.mmproj-q8_0.gguf"
