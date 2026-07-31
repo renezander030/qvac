@@ -40,8 +40,9 @@ vcpkg_from_github(
     PATCHES
         # The superbuild at this pin gates whisper / parakeet / tts only; add
         # the same-shaped gate for engines/audiogen (byte-identical here to the
-        # standalone audiogen-cpp port's 26803b09 pin). Drop once upstream
-        # grows SPEECH_BUILD_AUDIOGEN.
+        # standalone audiogen-cpp port's 26803b09 pin). The identical change is
+        # upstream as qvac-ext-lib-whisper.cpp#116 — once it merges, re-pin to
+        # that commit and drop this patch.
         patches/0001-umbrella-audiogen-gate.patch
 )
 
@@ -51,31 +52,29 @@ if (NOT EXISTS "${SOURCE_PATH}/CMakeLists.txt")
         "CMakeLists.txt at the qvac-ext-lib-whisper.cpp repo root may have moved.")
 endif()
 
-set(SPEECH_BUILD_WHISPER  OFF)
-set(SPEECH_BUILD_PARAKEET OFF)
-set(SPEECH_BUILD_TTS      OFF)
-set(SPEECH_BUILD_AUDIOGEN OFF)
-if("whisper" IN_LIST FEATURES)
-    set(SPEECH_BUILD_WHISPER ON)
-endif()
-if("parakeet" IN_LIST FEATURES)
-    set(SPEECH_BUILD_PARAKEET ON)
-endif()
-if("tts" IN_LIST FEATURES)
-    set(SPEECH_BUILD_TTS ON)
-endif()
-if("audiogen" IN_LIST FEATURES)
-    set(SPEECH_BUILD_AUDIOGEN ON)
-endif()
+# Engine features, each mapped to its SPEECH_BUILD_<ENGINE> superbuild gate.
+# The plain variables (not vcpkg_check_features) are needed again below for
+# the per-engine vcpkg_cmake_config_fixup guards. Adding a future engine
+# (e.g. qwen-asr) means extending this list plus its fixup below.
+set(SPEECH_ENGINE_FEATURES whisper parakeet tts audiogen)
+
+set(SPEECH_ENABLED_ENGINES "")
+foreach(SPEECH_ENGINE IN LISTS SPEECH_ENGINE_FEATURES)
+    string(TOUPPER "${SPEECH_ENGINE}" SPEECH_ENGINE_UPPER)
+    set(SPEECH_BUILD_${SPEECH_ENGINE_UPPER} OFF)
+    if("${SPEECH_ENGINE}" IN_LIST FEATURES)
+        set(SPEECH_BUILD_${SPEECH_ENGINE_UPPER} ON)
+        list(APPEND SPEECH_ENABLED_ENGINES "${SPEECH_ENGINE}")
+    endif()
+endforeach()
 
 # Unreachable through a default install (the whisper feature is a default);
 # guards a manifest that sets default-features false and picks only backends.
-if (NOT SPEECH_BUILD_WHISPER AND NOT SPEECH_BUILD_PARAKEET
-    AND NOT SPEECH_BUILD_TTS AND NOT SPEECH_BUILD_AUDIOGEN)
+if (NOT SPEECH_ENABLED_ENGINES)
+    list(JOIN SPEECH_ENGINE_FEATURES ", " SPEECH_ENGINE_FEATURE_LIST)
     message(FATAL_ERROR
         "speech-cpp: no engine selected. Enable at least one of the engine "
-        "features: speech-cpp[whisper], speech-cpp[parakeet], "
-        "speech-cpp[tts], speech-cpp[audiogen].")
+        "features: ${SPEECH_ENGINE_FEATURE_LIST}.")
 endif()
 
 # Engine-side GPU gating (the actual backends are compiled into ggml-speech;
