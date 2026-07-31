@@ -16,12 +16,21 @@
 //     overhead amortises as the model grows.
 //
 // Why a ratio and not absolute numbers: CI runners are shared and their
-// absolute throughput drifts run-to-run by more than the effect being
-// measured. Both arms are therefore loaded together per cell and their timed
-// runs INTERLEAVED (off, on, off, on), so drift and neighbour load hit both
-// arms roughly equally. Verified: an isolated control (one addon at a time,
-// alternating order) reproduced the co-loaded result, and the ordering effect
-// was under 2%.
+// absolute throughput drifts run-to-run by more than the effect being measured.
+// The arms are therefore INTERLEAVED in time (plain, spec, plain, spec, ...) so
+// drift and neighbour load hit both roughly equally. Verified: an isolated
+// control reproduced the result with an ordering effect under 2%.
+//
+// Why ONE arm resident at a time (runPair): each arm is a separate addon with
+// its own copy of the weights, so co-loading them needs 2x the model in memory.
+// That was free on CPU but on an 8GB GPU it made the 4B cells spill to host
+// memory and report a 3-4x "slowdown" that was pure measurement artifact
+// (spec prefill 409ms vs plain 40ms — and speculation cannot touch prefill).
+// Loading and unloading around every generation keeps peak memory at 1x the
+// model while preserving the time-interleaving above. Load/unload sits outside
+// the timed region, so it costs benchmark wall-clock, never accuracy.
+// measureCell() now warns on that TTFT asymmetry so a spill can never again be
+// mistaken for a result.
 //
 // Why decode WALL-CLOCK rather than stats.TPS: llama only books a decode as
 // generation when the batch holds exactly one token, so before the addon
@@ -58,10 +67,12 @@ const benchOptIn = !!(proc.env && proc.env.QVAC_RUN_MTP_BENCH === 'true')
 // models by scanning for `{ name, url }` pairs, and this benchmark is
 // desktop/opt-in only. Desktop resolves downloads from
 // test/integration/models.manifest.json, where all three are SHA-pinned.
+// `bytes` mirrors models.manifest.json and is used only for the memory report /
+// spill warning, so a reader can compare peak resident against their VRAM.
 const MODELS = [
-  { label: '0.8B', name: 'Qwen3.5-0.8B-MTP-Q8_0.gguf' },
-  { label: '2B', name: 'Qwen3.5-2B-MTP-Q8_0.gguf' },
-  { label: '4B', name: 'Qwen3.5-4B-MTP-Q8_0.gguf' }
+  { label: '0.8B', name: 'Qwen3.5-0.8B-MTP-Q8_0.gguf', bytes: 833592128 },
+  { label: '2B', name: 'Qwen3.5-2B-MTP-Q8_0.gguf', bytes: 2076674880 },
+  { label: '4B', name: 'Qwen3.5-4B-MTP-Q8_0.gguf', bytes: 4610580192 }
 ]
 
 // Three classes spanning the acceptance range, since acceptance is the
@@ -104,9 +115,10 @@ const PROMPTS = [
   }
 ]
 
-// 128 rather than 256: the matrix is 3 models x 3 prompts x (2 warmup + 6
-// timed) = 72 generations, and the 4B arm would otherwise dominate the
-// runtime. 128 still keeps decode well clear of prefill.
+// 128 rather than 256: the matrix is 3 models x 3 prompts x 3 pairs x (1 cheap
+// warmup + 1 timed) per arm = 36 timed generations plus 36 short warmups, and
+// the 4B arm would otherwise dominate the runtime. 128 still keeps decode well
+// clear of prefill.
 const N_PREDICT = 128
 const CTX_SIZE = 2048
 // Timed pairs per cell. Each pair is one spec-off + one spec-on run.
@@ -127,9 +139,9 @@ function baseConfig(withSpec) {
   return config
 }
 
-// Loaded and unloaded per cell rather than registered on the test: 4B Q8_0 is
-// 4.6GB and holding three models' worth of contexts at once would be wasteful
-// (and on a constrained box, self-defeating).
+// Exactly ONE addon is resident at any moment — see runPair(). Each load is a
+// separate LlmLlamacpp with its own copy of the weights, so co-loading both
+// arms would need 2x the model in memory.
 async function loadAddon(modelPath, withSpec) {
   const addon = new LlmLlamacpp({
     files: { model: [modelPath] },
@@ -139,6 +151,24 @@ async function loadAddon(modelPath, withSpec) {
   })
   await addon.load()
   return addon
+}
+
+// Cheap warmup: a freshly loaded addon pays kernel/allocator warmup on its
+// first generation, which would otherwise land inside the timed run. Only a few
+// tokens are needed to warm that up, so override predict per request
+// (RunOptions.generationParams.predict) instead of generating the full 128.
+const WARMUP_PREDICT = 8
+
+async function warmup(addon, messages) {
+  const ticker = setInterval(() => {}, 50)
+  try {
+    const response = await addon.run(messages, {
+      generationParams: { predict: WARMUP_PREDICT }
+    })
+    await response.onUpdate(() => {}).await()
+  } finally {
+    clearInterval(ticker)
+  }
 }
 
 // One timed generation. Returns the output plus wall-clock total and the
@@ -179,23 +209,68 @@ function median(values) {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
 }
 
+// Percentage spread of a series, used as a thermal-drift indicator.
+function spreadPct(values) {
+  const lo = Math.min(...values)
+  const hi = Math.max(...values)
+  return lo > 0 ? ((hi - lo) / lo) * 100 : 0
+}
+
+// Above this, per-run times varied enough that the cell should not be quoted
+// without noting it. On a laptop GPU under sustained load, throttling is the
+// usual cause.
+const DRIFT_WARN_PCT = 15
+
+// A spec-arm TTFT this many times the plain arm's means the two arms are not
+// equally resident in device memory — see the spill note in measureCell().
+// Heuristic: calibrated from a single observed 10x case, so it is a prompt to
+// investigate, not a precise test.
+const SPILL_TTFT_RATIO = 3
+
+// Run ONE timed generation for each arm, loading and unloading around each so
+// only one model is ever resident. The arms stay interleaved in time (plain,
+// spec, plain, spec, ...) so thermal ramp is symmetric rather than a systematic
+// bias against whichever arm would otherwise run last.
+//
+// Every load is cold, hence the warmup before each timed run. Load/unload time
+// is deliberately outside timedRun(), so reloading costs benchmark wall-clock
+// but never enters the measurement.
+//
+// Side benefit over the previous co-loaded design: each timed generation is now
+// the FIRST on a fresh addon, so no per-addon state accumulates across runs.
+// (Measured on the old design: implied-t_eval/wall was 0.96 on generation 1 but
+// 1.09-1.10 from generation 2 onward on the speculative path.)
+async function runPair(modelPath, prompt) {
+  const plainAddon = await loadAddon(modelPath, false)
+  let plain
+  try {
+    await warmup(plainAddon, prompt.messages)
+    plain = await timedRun(plainAddon, prompt.messages)
+  } finally {
+    await plainAddon.unload().catch(() => {})
+  }
+
+  const specAddon = await loadAddon(modelPath, true)
+  let spec
+  try {
+    await warmup(specAddon, prompt.messages)
+    spec = await timedRun(specAddon, prompt.messages)
+  } finally {
+    await specAddon.unload().catch(() => {})
+  }
+
+  return { plain, spec }
+}
+
 // Measure one (model, prompt) cell. Returns the row for the summary table.
 async function measureCell(t, modelPath, model, prompt) {
-  const plainAddon = await loadAddon(modelPath, false)
-  const specAddon = await loadAddon(modelPath, true)
-  try {
-    // Warm up each arm once, untimed: the first generation on a fresh context
-    // pays kernel/allocator warmup that would otherwise land entirely on
-    // whichever arm happens to run first.
-    await timedRun(plainAddon, prompt.messages)
-    await timedRun(specAddon, prompt.messages)
-
+  {
     const plainRuns = []
     const specRuns = []
     for (let pair = 1; pair <= PAIRS; pair++) {
-      // Interleaved, not grouped — see the header note on drift.
-      plainRuns.push(await timedRun(plainAddon, prompt.messages))
-      specRuns.push(await timedRun(specAddon, prompt.messages))
+      const { plain, spec } = await runPair(modelPath, prompt)
+      plainRuns.push(plain)
+      specRuns.push(spec)
     }
 
     const plainDecode = median(plainRuns.map((r) => r.decodeMs))
@@ -235,6 +310,47 @@ async function measureCell(t, modelPath, model, prompt) {
         `TPS ${Number(lastPlain.stats.TPS).toFixed(1)} -> ${Number(lastSpec.stats.TPS).toFixed(1)}`
     )
 
+    // Per-run spread, so thermal drift is visible instead of hidden behind the
+    // median. Mirrors the std-dev reporting in benchmarks/performance/
+    // case-runner.js. The median stays the headline (robust to one outlier).
+    const plainDecodes = plainRuns.map((r) => r.decodeMs)
+    const specDecodes = specRuns.map((r) => r.decodeMs)
+    row.plainSpreadPct = spreadPct(plainDecodes)
+    row.specSpreadPct = spreadPct(specDecodes)
+    console.log(
+      `      per-run decode  plain [${plainDecodes.map((v) => v.toFixed(0)).join(', ')}] ` +
+        `spread ${row.plainSpreadPct.toFixed(1)}%  |  ` +
+        `spec [${specDecodes.map((v) => v.toFixed(0)).join(', ')}] spread ${row.specSpreadPct.toFixed(1)}%`
+    )
+    if (row.plainSpreadPct > DRIFT_WARN_PCT || row.specSpreadPct > DRIFT_WARN_PCT) {
+      console.log(
+        `      WARNING: per-run spread exceeds ${DRIFT_WARN_PCT}% — thermal throttling or a noisy ` +
+          `host is likely; treat this cell's ratio as indicative only.`
+      )
+    }
+
+    // Memory-spill detector. Speculation cannot affect PREFILL, so if the spec
+    // arm's TTFT is far above the plain arm's, the two runs were not equally
+    // resident in device memory — the spec model spilled to host RAM and is
+    // partially offloaded. This is exactly how the first GPU run's 4B cells
+    // were invalidated (plain TTFT 40ms vs spec 409ms, because the old design
+    // co-loaded both arms and 2 x 4.6GB exceeded 8GB of VRAM). Kept as a
+    // warning, not a failure: a spilled cell is a true observation about the
+    // host, just not about MTP.
+    const plainTtft = median(plainRuns.map((r) => r.ttftMs))
+    const specTtft = median(specRuns.map((r) => r.ttftMs))
+    row.plainTtft = plainTtft
+    row.specTtft = specTtft
+    row.spilled = plainTtft > 0 && specTtft > plainTtft * SPILL_TTFT_RATIO
+    if (row.spilled) {
+      console.log(
+        `      WARNING: probable MEMORY SPILL — spec TTFT ${specTtft.toFixed(0)}ms vs plain ` +
+          `${plainTtft.toFixed(0)}ms (>${SPILL_TTFT_RATIO}x). Prefill is untouched by speculation, so ` +
+          `the arms were not equally resident. Model on disk: ${(model.bytes / 1e9).toFixed(2)}GB; ` +
+          `peak resident should be 1x that. TREAT THIS CELL AS INVALID.`
+      )
+    }
+
     // Tag from the backend the addon actually resolved, NOT the requested
     // device: a box with no usable GPU asks for "gpu", ggml reports "No
     // devices found" and silently runs on CPU.
@@ -258,9 +374,6 @@ async function measureCell(t, modelPath, model, prompt) {
       `[${model.label}/${prompt.label}] non-spec arm drafted nothing`
     )
     return row
-  } finally {
-    await plainAddon.unload().catch(() => {})
-    await specAddon.unload().catch(() => {})
   }
 }
 
@@ -272,6 +385,13 @@ safeTest(
     for (const model of MODELS) {
       const [modelName, dirPath] = await ensureModel({ modelName: model.name })
       const modelPath = path.join(dirPath, modelName)
+      // Peak resident is ONE model at a time (runPair loads and unloads around
+      // each generation), so compare this figure against available VRAM — not
+      // 2x it, as the earlier co-loaded design required.
+      console.log(
+        `\n[${model.label}] ${(model.bytes / 1e9).toFixed(2)}GB on disk; peak resident ~1x that ` +
+          `(one arm at a time)`
+      )
       for (const prompt of PROMPTS) {
         rows.push(await measureCell(t, modelPath, model, prompt))
       }
@@ -279,22 +399,41 @@ safeTest(
 
     console.log('')
     console.log('==== MTP speedup matrix (>1.000 means MTP is FASTER) ====')
-    console.log('model  prompt          decode-x  wall-x  accept  plain-TPS  spec-TPS  backend')
+    console.log('model  prompt          decode-x  wall-x  accept  drift%  backend  flags')
     for (const r of rows) {
+      const flags = [
+        r.spilled ? 'SPILL/INVALID' : '',
+        r.plainSpreadPct > DRIFT_WARN_PCT || r.specSpreadPct > DRIFT_WARN_PCT ? 'DRIFT' : ''
+      ]
+        .filter(Boolean)
+        .join(',')
+      const drift = Math.max(r.plainSpreadPct, r.specSpreadPct)
       console.log(
         `${r.model.padEnd(6)} ${r.prompt.padEnd(15)} ` +
           `${r.decodeRatio.toFixed(3).padStart(8)} ${r.wallRatio.toFixed(3).padStart(7)} ` +
-          `${r.acceptRate.toFixed(2).padStart(7)} ${Number(r.plainTps).toFixed(1).padStart(10)} ` +
-          `${Number(r.specTps).toFixed(1).padStart(9)}  ${r.backend}`
+          `${r.acceptRate.toFixed(2).padStart(7)} ${drift.toFixed(1).padStart(7)} ` +
+          `${r.backend.padStart(8)}  ${flags}`
       )
     }
-    const best = rows.reduce((a, b) => (b.wallRatio > a.wallRatio ? b : a))
-    console.log(
-      `best cell: ${best.model}/${best.prompt} at ${best.wallRatio.toFixed(3)}x ` +
-        `(acceptance ${best.acceptRate.toFixed(2)}, backend ${best.backend})`
-    )
-    console.log(
-      `cells where MTP was faster: ${rows.filter((r) => r.wallRatio > 1).length}/${rows.length}`
-    )
+    // spec-TPS is deliberately NOT in this table: it is a known-unreliable
+    // statistic on the speculative path (over-counted t_eval). The ratios above
+    // are wall-clock derived and independent of it.
+    const valid = rows.filter((r) => !r.spilled)
+    if (valid.length < rows.length) {
+      console.log(
+        `NOTE: ${rows.length - valid.length}/${rows.length} cell(s) flagged SPILL — excluded from the ` +
+          `summary below. Re-run those on a host with more device memory.`
+      )
+    }
+    if (valid.length > 0) {
+      const best = valid.reduce((a, b) => (b.wallRatio > a.wallRatio ? b : a))
+      console.log(
+        `best valid cell: ${best.model}/${best.prompt} at ${best.wallRatio.toFixed(3)}x ` +
+          `(acceptance ${best.acceptRate.toFixed(2)}, backend ${best.backend})`
+      )
+      console.log(
+        `cells where MTP was faster: ${valid.filter((r) => r.wallRatio > 1).length}/${valid.length} valid`
+      )
+    }
   }
 )
