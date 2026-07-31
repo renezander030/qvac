@@ -21,12 +21,15 @@
 # (find_package(qvac-parakeet) + qvac::parakeet) — and upstream's is neither
 # built nor installed. No file-ownership clash, no wasted build.
 #
-# Pinned at master HEAD d09cdb9e, the same commit (and the same source archive)
-# as the standalone tts-cpp port; whisper-cpp / parakeet-cpp pin 928369c9,
-# whose third_party/whisper.cpp and engines/parakeet subtrees are byte-identical
-# to d09cdb9e (everything in between touches engines/tts, engines/audiogen and
-# .github only). The standalone ports remain available transitionally; this
-# port supersedes them.
+# Pinned at master HEAD a7cae879 (PR #116 merged: the SPEECH_BUILD_AUDIOGEN
+# umbrella gate this port previously carried as a patch — now upstream, patch
+# dropped). Relative to the standalone ports' pins this additionally carries
+# PR #115 (tts-cpp: Parler-TTS on OpenCL/Adreno, engine-side only) and #112
+# (CI only); third_party/whisper.cpp and engines/{parakeet,audiogen} are
+# byte-identical to the standalone whisper-cpp / parakeet-cpp (928369c9) and
+# audiogen-cpp (26803b09) pins, and engines/tts is #115 ahead of the
+# standalone tts-cpp (d09cdb9e) pin. The standalone ports remain available
+# transitionally; this port supersedes them.
 
 set(VCPKG_POLICY_MISMATCHED_NUMBER_OF_BINARIES enabled)
 set(VCPKG_BUILD_TYPE release)
@@ -34,16 +37,9 @@ set(VCPKG_BUILD_TYPE release)
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO tetherto/qvac-ext-lib-whisper.cpp
-    REF d09cdb9ee6cfeb18c3b08963c07c97a078c7b281
-    SHA512 1d7d79a4afa41673d5f140221036fe08c181832f7a9119be5461a4d5cbff6a7cd17a67f3200c771ea61e699ebf32b664c39616579c19614d4649b483a20f55e0
+    REF a7cae879e00c0eb89cc2825603e699f3e742ca2c
+    SHA512 e7a818f628467675e8bbebcc25bd2b4c8485e35fd4d85f16bb6e3e4441b970206a1df352cd7a7836bd88ae3ad774a232e51183f3e409d7c309cf82393641b0b2
     HEAD_REF master
-    PATCHES
-        # The superbuild at this pin gates whisper / parakeet / tts only; add
-        # the same-shaped gate for engines/audiogen (byte-identical here to the
-        # standalone audiogen-cpp port's 26803b09 pin). The identical change is
-        # upstream as qvac-ext-lib-whisper.cpp#116 — once it merges, re-pin to
-        # that commit and drop this patch.
-        patches/0001-umbrella-audiogen-gate.patch
 )
 
 if (NOT EXISTS "${SOURCE_PATH}/CMakeLists.txt")
