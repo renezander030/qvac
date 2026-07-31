@@ -25,6 +25,7 @@ const {
   ensureCangjieTsv
 } = require('../utils/downloadModel')
 const { recordTtsStats } = require('../utils/perf-helper')
+const { isReducedMatrix, reduceSweep } = require('../utils/reducedMatrix')
 
 const platform = os.platform()
 const isMobile = platform === 'ios' || platform === 'android'
@@ -49,6 +50,12 @@ const MTL_SENTENCES = [
 
 const JA_SENTENCE = '今日はいい天気ですね。'
 const ZH_SENTENCE = '敏捷的棕色狐狸跳过懒狗。'
+
+// Japanese and Chinese are extra languages of the same model, so a reduced run
+// drops them with the rest of the sweep; MeCab and Cangjie keep their coverage
+// on the fast phone. Titles stay static either way so results stay comparable.
+const SWEEP_SENTENCES = reduceSweep(MTL_SENTENCES)
+const SKIP_EXTRA_LANGUAGES = isReducedMatrix()
 
 async function loadChatterboxMtlTTS(params) {
   // Route through `resolveRefWavPath` so the mobile-asset path (staged
@@ -81,8 +88,52 @@ async function loadChatterboxMtlTTS(params) {
   return model
 }
 
+async function synthesizeSweepEntry(t, model, entry) {
+  const { lang, text } = entry
+  console.log(`  [${lang}] "${text.slice(0, 50)}..."`)
+  const t0 = Date.now()
+  const result = await runTTS(
+    model,
+    { text },
+    { minSamples: 5000, maxSamples: 5000000, minDurationMs: 200, maxDurationMs: 300000 },
+    { sampleRate: SAMPLE_RATE, engineTag: 'Chatterbox MTL' }
+  )
+  const wallMs = Date.now() - t0
+  console.log('    ' + result.output)
+
+  t.ok(result.passed, `MTL ${lang} run passes expectations`)
+  t.ok(result.data.sampleCount > 0, `MTL ${lang} produced audio`)
+  t.is(result.data.reportedSampleRate || SAMPLE_RATE, SAMPLE_RATE, `MTL ${lang} reports 24 kHz`)
+
+  const st = result.data?.stats || {}
+  t.comment(
+    recordTtsStats(
+      `chatterbox mtl ${lang}`,
+      {
+        realTimeFactor: st.realTimeFactor,
+        audioDurationMs: st.audioDurationMs || result.data?.durationMs,
+        totalSamples: st.totalSamples,
+        backendDevice: st.backendDevice
+      },
+      { wallMs, sampleCount: result.data?.sampleCount, model: 'chatterbox-mtl', output: text }
+    )
+  )
+}
+
+// The engine is loaded on the first entry's language, so every later entry
+// needs a reload to switch the language conditioning.
+async function synthesizeSweep(t, model, sentences) {
+  console.log(`  sweep languages: ${sentences.map((entry) => entry.lang).join('/')}`)
+  for (let i = 0; i < sentences.length; i++) {
+    if (i > 0) {
+      await model.reload({ language: sentences[i].lang })
+    }
+    await synthesizeSweepEntry(t, model, sentences[i])
+  }
+}
+
 test(
-  'Chatterbox MTL TTS (ggml): synthesizes across es/fr/de/pt/it with shared engine',
+  'Chatterbox MTL TTS (ggml): synthesizes the language sweep with shared engine',
   { timeout: 1800000 },
   async (t) => {
     const baseDir = getBaseDir()
@@ -98,47 +149,10 @@ test(
       modelDir: download.targetDir,
       t3ModelPath: path.join(download.targetDir, 'chatterbox-t3-mtl.gguf'),
       s3genModelPath: path.join(download.targetDir, 'chatterbox-s3gen-mtl.gguf'),
-      language: MTL_SENTENCES[0].lang
+      language: SWEEP_SENTENCES[0].lang
     })
     try {
-      for (let i = 0; i < MTL_SENTENCES.length; i++) {
-        const { lang, text } = MTL_SENTENCES[i]
-        console.log(`  [${lang}] "${text.slice(0, 50)}..."`)
-        if (i > 0) {
-          await model.reload({ language: lang })
-        }
-        const t0 = Date.now()
-        const result = await runTTS(
-          model,
-          { text },
-          { minSamples: 5000, maxSamples: 5000000, minDurationMs: 200, maxDurationMs: 300000 },
-          { sampleRate: SAMPLE_RATE, engineTag: 'Chatterbox MTL' }
-        )
-        const wallMs = Date.now() - t0
-        console.log('    ' + result.output)
-
-        t.ok(result.passed, `MTL ${lang} run passes expectations`)
-        t.ok(result.data.sampleCount > 0, `MTL ${lang} produced audio`)
-        t.is(
-          result.data.reportedSampleRate || SAMPLE_RATE,
-          SAMPLE_RATE,
-          `MTL ${lang} reports 24 kHz`
-        )
-
-        const st = result.data?.stats || {}
-        t.comment(
-          recordTtsStats(
-            `chatterbox mtl ${lang}`,
-            {
-              realTimeFactor: st.realTimeFactor,
-              audioDurationMs: st.audioDurationMs || result.data?.durationMs,
-              totalSamples: st.totalSamples,
-              backendDevice: st.backendDevice
-            },
-            { wallMs, sampleCount: result.data?.sampleCount, model: 'chatterbox-mtl', output: text }
-          )
-        )
-      }
+      await synthesizeSweep(t, model, SWEEP_SENTENCES)
     } finally {
       try {
         await model.unload()
@@ -149,7 +163,7 @@ test(
 
 test(
   'Chatterbox MTL TTS (ggml): synthesizes Japanese with MeCab dictionary',
-  { timeout: 1800000 },
+  { timeout: 1800000, skip: SKIP_EXTRA_LANGUAGES },
   async (t) => {
     const baseDir = getBaseDir()
     const download = await ensureChatterboxMtlModels({ targetDir: path.join(baseDir, 'models') })
@@ -216,7 +230,7 @@ test(
 
 test(
   'Chatterbox MTL TTS (ggml): synthesizes Chinese with Cangjie table',
-  { timeout: 1800000 },
+  { timeout: 1800000, skip: SKIP_EXTRA_LANGUAGES },
   async (t) => {
     const baseDir = getBaseDir()
     const download = await ensureChatterboxMtlModels({ targetDir: path.join(baseDir, 'models') })

@@ -70,7 +70,12 @@ jobs:
     name: Build ${{ matrix.platform }} (${{ matrix.engine || 'chatterbox' }} ${{ matrix.variant }} ${{ matrix.use_gpu && 'gpu' || 'cpu' }}${{ matrix.enhancer == 'lavasr' && ' enh' || '' }}${{ matrix.denoiser == 'lavasr' && ' den' || '' }}) and Run E2E Tests
     runs-on: ${{ matrix.runner }}
     environment: release
-    timeout-minutes: 120
+    # The Android job waits on both phones and the throttled Pixel 9 gates it.
+    # Sized off the Device Farm ceiling rather than observed times: a run is
+    # capped at schedule-test-run's job-timeout-minutes default of 120, so the
+    # job needs room for that cap plus build and log collection. At 120 it was
+    # cancelled mid-run and the Device Farm logs were lost.
+    timeout-minutes: 150
     continue-on-error: true
     permissions:
       contents: read
@@ -229,6 +234,12 @@ jobs:
           ios-keychain-password: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
           ios-provisioning-profile-base64: ${{ secrets.TEST_APP_APPLE_PROVISIONING_PROFILE }}
           apple-team-id: ${{ secrets.APPLE_TEAM_ID }}
+          # Pixel 9 is thermally throttled and runs 3-5x slower than the S25
+          # Ultra: runChatterboxMtlTest has been measured at 27.3 min and 36.8
+          # min on device while the harness default gives up at 20, reporting a
+          # passing test as failed and charging the overrun to the next test's
+          # window. Android-only so iOS keeps the 20 min default.
+          android-per-test-timeout-minutes: '45'
 
       # Benchmark runs (run_rtf_benchmarks=true): the benchmark runners are
       # intentionally NOT in test-groups.json, so they never run on normal PRs.
@@ -250,6 +261,36 @@ jobs:
           echo "Benchmark grep: $GREP"
           printf 'groups=[{"name":"perf","grep":"%s"}]\n' "$GREP" >> "$GITHUB_OUTPUT"
 
+      # Both Android phones share one build and one test package, so the tests
+      # can only tell a throttled Pixel 9 from an S25 Ultra at runtime. Device
+      # Farm exposes the model as $DEVICEFARM_DEVICE_NAME on the host running
+      # the spec, so the pre_test phase writes it where the device can read it;
+      # test/mobile/integration-runtime.cjs loads it back into the env.
+      - name: Compose Android pre-test commands
+        id: pre_test
+        if: ${{ matrix.platform == 'Android' }}
+        env:
+          PRESTAGE_BLOCK: ${{ steps.prestage.outputs.block }}
+        run: |
+          {
+            echo "block<<PRE_TEST_EOF"
+            if [ -n "$PRESTAGE_BLOCK" ]; then printf '%s\n' "$PRESTAGE_BLOCK"; fi
+            # Emitted as a testspec block scalar so the quoting and the ':' in
+            # the warning survive YAML. An unset variable must be loud: the
+            # tests would otherwise fall back to the full sweep, which is the
+            # timeout this guard exists to prevent.
+            cat <<'PRE_TEST_BLOCK'
+          |
+            if [ -n "$DEVICEFARM_DEVICE_NAME" ]; then
+              adb shell "echo QVAC_DEVICE_NAME=$DEVICEFARM_DEVICE_NAME > /data/local/tmp/qvacDeviceInfo.txt"
+              echo "[device-info] wrote QVAC_DEVICE_NAME=$DEVICEFARM_DEVICE_NAME"
+            else
+              echo "[device-info] WARNING: DEVICEFARM_DEVICE_NAME is unset, so the reduced matrix cannot apply"
+            fi
+          PRE_TEST_BLOCK
+            echo "PRE_TEST_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Upload to Device Farm
         id: upload
         uses: ./.github/actions/run-mobile-integration-tests/upload-to-devicefarm
@@ -265,9 +306,11 @@ jobs:
           # (functional tests). Set on benchmark runs => only the benchmarks.
           test-groups: ${{ steps.perf_groups.outputs.groups }}
           enables-perf: ${{ inputs.run_rtf_benchmarks && 'true' || 'false' }}
-          mocha-timeout-ms: '2700000'
+          # Must stay above android-per-test-timeout-minutes (45 min), otherwise
+          # Mocha aborts the test before the per-test waitUntil can report.
+          mocha-timeout-ms: '3000000'
           wdio-waitfor-timeout-ms: '600000'
-          extra-pre-test-commands: ${{ steps.prestage.outputs.block }}
+          extra-pre-test-commands: ${{ steps.pre_test.outputs.block }}
 
       - name: Schedule Device Farm test runs
         id: schedule

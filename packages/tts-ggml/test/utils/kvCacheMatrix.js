@@ -13,7 +13,9 @@
 //   Metal with `GGML_ABORT("unsupported op 'CONT'")`.  The exact matrix cell
 //   that contained the bug — multilingual × GPU(Metal) × q8_0 — was never
 //   exercised by any test:
-//     - gpu-smoke.test.js runs GPU but only the Turbo (en) model.
+//     - gpu-smoke.test.js ran GPU but only the Turbo (en) model. It has since
+//       gained an MTL GPU smoke, though still only at the addon-default (f16)
+//       dtype, so every non-default cell remains unique to this harness.
 //     - chatterbox-mtl.test.js runs the MTL model but only on CPU.
 //   This harness makes that whole matrix a first-class, reusable sweep so a
 //   future KV-default / engine / backend change can't silently re-open the

@@ -8,7 +8,8 @@
 // (`GGML_ABORT("unsupported op 'CONT'")` inside `eval_step_mtl`), while the
 // EN Turbo model and the CPU backend were fine.  No existing test covered
 // the MTL × GPU × q8_0 cell:
-//   - gpu-smoke.test.js  -> GPU, but Turbo (en) only.
+//   - gpu-smoke.test.js  -> GPU for both Turbo (en) and MTL, but only at the
+//     addon-default (f16) KV dtype; the non-default cells are unique to here.
 //   - chatterbox-mtl.test.js -> MTL, but CPU only.
 //
 // The sweep below loads each Chatterbox variant on the GPU across the
@@ -43,8 +44,16 @@ const {
   loadChatterbox,
   assertSynthesisCompletes
 } = require('../utils/kvCacheMatrix')
+const { isReducedMatrix } = require('../utils/reducedMatrix')
 
 const LANGUAGE_FOR = { mtl: 'es', turbo: 'en' }
+
+// A reduced run keeps one TURBO cell so the variant is still proven to load and
+// synthesize on that GPU without repeating the dtype sweep. f32 rather than the
+// default: gpu-smoke.test.js already runs both Turbo and MTL on the GPU at the
+// default (f16) dtype on the same Android group, so a default cell here would
+// cost a model load and buy nothing.
+const REDUCED_GPU_CELL = { variant: 'turbo', kvCacheType: 'f32' }
 
 // Load `variant` on the GPU with `kvCacheType`, synthesize once, assert it
 // completed and engaged the GPU, then unload.  Shared by every matrix entry.
@@ -97,26 +106,58 @@ async function runGpuCase(t, variant, kvCacheType) {
 // aborts on Metal; post-fix (f16 default) it completes.
 test(
   'Chatterbox MTL + useGPU=true + DEFAULT KV cache synthesizes to completion',
-  { timeout: 600000, skip: NO_GPU },
+  { timeout: 600000, skip: NO_GPU || isReducedMatrix() },
   async (t) => {
     await runGpuCase(t, 'mtl', undefined)
   }
 )
 
 // ── Full GPU-safe sweep: every variant × {default, f16, f32} on GPU ──────
-for (const variant of CHATTERBOX_VARIANTS) {
+function kvCellsForVariant(variant) {
+  const cells = []
   for (const kvCacheType of [undefined, ...GPU_SAFE_KV_TYPES]) {
     // The MTL/default cell is the headline test above; skip the duplicate.
     if (variant === 'mtl' && kvCacheType === undefined) continue
+    cells.push({ variant, kvCacheType })
+  }
+  return cells
+}
+
+function fullGpuSweepCells() {
+  const cells = []
+  for (const variant of CHATTERBOX_VARIANTS) {
+    cells.push(...kvCellsForVariant(variant))
+  }
+  return cells
+}
+
+function isReducedCell(cell) {
+  return (
+    cell.variant === REDUCED_GPU_CELL.variant && cell.kvCacheType === REDUCED_GPU_CELL.kvCacheType
+  )
+}
+
+// Every cell stays registered on the reduced leg and the dropped ones report
+// as skips, so its test-results.json still accounts for the full sweep instead
+// of silently reporting a smaller total than the full leg.
+function skipCell(cell) {
+  return NO_GPU || (isReducedMatrix() && !isReducedCell(cell))
+}
+
+function registerGpuSweep(cells) {
+  for (const cell of cells) {
+    const { variant, kvCacheType } = cell
     test(
       `Chatterbox ${variant.toUpperCase()} + useGPU=true + kv=${kvLabel(kvCacheType)} synthesizes to completion`,
-      { timeout: 600000, skip: NO_GPU },
+      { timeout: 600000, skip: skipCell(cell) },
       async (t) => {
         await runGpuCase(t, variant, kvCacheType)
       }
     )
   }
 }
+
+registerGpuSweep(fullGpuSweepCells())
 
 // ── Opt-in: known-unsafe dtypes on the GPU (QVAC_TTS_KV_PROBE_UNSAFE=1) ──
 // q8_0 still aborts the MTL model on Metal until the backend-aware tts-cpp

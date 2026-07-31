@@ -2,8 +2,15 @@
 
 const path = require('bare-path')
 const fs = require('bare-fs')
+const os = require('bare-os')
 const proc = require('bare-process')
 const { pathToFileURL } = require('bare-url')
+
+const { reportDeviceScope } = require('../utils/deviceInfo')
+
+// Must run before any test module is imported: the sweeps read the device name
+// at import time to decide their scope.
+reportDeviceScope(os.platform())
 
 // Force the gpu-smoke integration test (and any other test that opts
 // into NO_GPU) to skip the GPU paths on Device Farm.  The desktop
