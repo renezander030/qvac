@@ -95,8 +95,13 @@ async function setupUnlimitedInference(t, device = 'gpu', extra = {}) {
     logger: console
   })
 
+  // Safety net only. brittle runs teardowns when the TEST ends, not per loop
+  // iteration, so with a multi-config matrix every ~2GB model would stay
+  // resident and the second load gets the process OOM-killed. The loop below
+  // unloads explicitly after each config; this stays as a backstop for the
+  // early-return paths and must tolerate having already run.
   t.teardown(async () => {
-    await inference.unload()
+    await inference.unload().catch(() => {})
   })
 
   await inference.load()
@@ -156,12 +161,10 @@ safeTest(
       // of the matrix is to see every variant's verdict in a single run.
       let generatedText = ''
       let totalTime = 0
+      let inference = null
       try {
-        const { inference } = await setupUnlimitedInference(
-          t,
-          deviceConfig.device,
-          deviceConfig.extra
-        )
+        const setup = await setupUnlimitedInference(t, deviceConfig.device, deviceConfig.extra)
+        inference = setup.inference
 
         // Scanned CT-scan report — dense paragraphs + a header form/table
         const imageFilePath = getMediaPath('ct-scan-report.png')
@@ -174,6 +177,12 @@ safeTest(
         t.comment(`${label} ISOLATION-RESULT: ERROR ${err && err.message}`)
         t.fail(`${label} inference threw: ${err && err.message}`)
         continue
+      } finally {
+        // Release before the next config loads. Two ~2GB models resident at
+        // once gets the process OOM-killed on this hardware.
+        if (inference) {
+          await inference.unload().catch(() => {})
+        }
       }
 
       t.comment(
