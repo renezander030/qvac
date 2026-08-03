@@ -73,27 +73,7 @@
   },
   "androidWeekly": {
     "ocr": [
-      "runOcrLightonTest",
-      "runOcrUnlimitedTest",
-      "runOcrPaddleTest"
-    ],
-    "imageHeavy": [
-      "runImageElephantTest",
-      "runImageHighResAuroraTest"
-    ],
-    "vlmPerfGemma4": [
-      "runGemma4ImageElephantPerfTest",
-      "runGemma4ImageFruitPlatePerfTest",
-      "runGemma4ImageHighResAuroraPerfTest"
-    ],
-    "vlmPerfUnlimitedOcr": [
-      "runUnlimitedOcrPerfTest"
-    ],
-    "vlmPerfQwen35": [
-      "runQwen35ImageElephantPerfTest",
-      "runQwen35ImageFruitPlatePerfTest",
-      "runQwen35ImageHighResAuroraPerfTest",
-      "runQwen35MultimodalCacheStressTest"
+      "runOcrUnlimitedTest"
     ]
   },
   "iosWeekly": {

@@ -42,24 +42,46 @@ const TEST_CONSTANTS = {
 // GPU on mobile: this is a 3B VLM — the LLM layers run on the mobile GPU (the
 // vision projector auto-selects GPU on Adreno/iOS, CPU on Mali; see README).
 // Only the Intel-mac / linux-arm desktop lanes fall back to CPU.
+//
+// TEMPORARY DIAGNOSTIC (issue #3589): on Galaxy S25 Ultra (Adreno 830, OpenCL
+// compiler E031.47.18.13) this model emits garbage, while the S26 Ultra
+// (Adreno 840, E031.50.19.13) and Pixel 9 Pro produce correct OCR from the
+// same binary. Probing on real hardware ruled out the GPU tier, every ggml
+// capability gate, flash-attention numerics and the MoE subgroup assumptions —
+// all identical across the two devices. So this widens the mobile matrix to
+// isolate WHICH subsystem is wrong, using only config knobs the addon already
+// exposes (no fabric or addon rebuild required):
+//
+//   gpu               baseline, exactly what ships          -> expected FAIL on S25
+//   gpu-mmproj-cpu    vision projector on CPU, LLM on GPU   -> passes => projector at fault
+//   gpu-no-fa         flash attention off, all else GPU     -> passes => masked FA path at fault
+//   cpu               sanity control                        -> must pass everywhere
+//
+// Revert once the culprit is identified; this is not intended to merge.
 const DEVICE_CONFIGS = isMobile
-  ? [{ id: 'gpu', device: 'gpu' }]
+  ? [
+      { id: 'gpu', device: 'gpu' },
+      { id: 'gpu-mmproj-cpu', device: 'gpu', extra: { 'mmproj-use-gpu': 'off' } },
+      { id: 'gpu-no-fa', device: 'gpu', extra: { 'flash-attn': 'off' } },
+      { id: 'cpu', device: 'cpu' }
+    ]
   : useCpuDesktop
     ? [{ id: 'cpu', device: 'cpu' }]
     : [{ id: 'gpu', device: 'gpu' }]
 
-function getConfig(device) {
+function getConfig(device, extra = {}) {
   return {
     gpu_layers: '98',
     temp: '0',
     verbosity: '2',
     device,
     ctx_size: UNLIMITED_OCR_CONFIG.ctx_size,
-    predict: TEST_CONSTANTS.maxTokens
+    predict: TEST_CONSTANTS.maxTokens,
+    ...extra
   }
 }
 
-async function setupUnlimitedInference(t, device = 'gpu') {
+async function setupUnlimitedInference(t, device = 'gpu', extra = {}) {
   const [modelName, dirPath] = await ensureModel(UNLIMITED_OCR_CONFIG.llmModel)
   t.ok(fs.existsSync(path.join(dirPath, modelName)), 'LLM model file should exist')
 
@@ -69,7 +91,7 @@ async function setupUnlimitedInference(t, device = 'gpu') {
   const modelPath = path.join(dirPath, modelName)
   const inference = new LlmLlamacpp({
     files: { model: [modelPath], projectionModel: path.join(dirPath, projModelName) },
-    config: getConfig(device),
+    config: getConfig(device, extra),
     logger: console
   })
 
@@ -130,14 +152,29 @@ safeTest(
     for (const deviceConfig of DEVICE_CONFIGS) {
       const label = `[${deviceConfig.id.toUpperCase()}]`
 
-      const { inference } = await setupUnlimitedInference(t, deviceConfig.device)
+      // One config throwing must not hide the remaining ones: the whole point
+      // of the matrix is to see every variant's verdict in a single run.
+      let generatedText = ''
+      let totalTime = 0
+      try {
+        const { inference } = await setupUnlimitedInference(
+          t,
+          deviceConfig.device,
+          deviceConfig.extra
+        )
 
-      // Scanned CT-scan report — dense paragraphs + a header form/table
-      const imageFilePath = getMediaPath('ct-scan-report.png')
-      t.ok(fs.existsSync(imageFilePath), `${label} ct-scan-report.png image file should exist`)
+        // Scanned CT-scan report — dense paragraphs + a header form/table
+        const imageFilePath = getMediaPath('ct-scan-report.png')
+        t.ok(fs.existsSync(imageFilePath), `${label} ct-scan-report.png image file should exist`)
 
-      const { generatedText, startTime, endTime } = await runOcr(inference, imageFilePath)
-      const totalTime = endTime - startTime
+        const result = await runOcr(inference, imageFilePath)
+        generatedText = result.generatedText
+        totalTime = result.endTime - result.startTime
+      } catch (err) {
+        t.comment(`${label} ISOLATION-RESULT: ERROR ${err && err.message}`)
+        t.fail(`${label} inference threw: ${err && err.message}`)
+        continue
+      }
 
       t.comment(
         `${label} Generated text (${generatedText.length} chars): ${generatedText.substring(0, 500)}...`
@@ -151,6 +188,13 @@ safeTest(
       const lowerText = generatedText.toLowerCase()
       const expectedKeywords = ['tomography', 'chest', 'abdomen', 'gallbladder', 'pancreas']
       const foundKeywords = expectedKeywords.filter((kw) => lowerText.includes(kw))
+
+      // Single greppable verdict line per config, so the isolation matrix can
+      // be read straight out of the Device Farm logs.
+      t.comment(
+        `${label} ISOLATION-RESULT: ${foundKeywords.length >= 2 ? 'GOOD' : 'GARBAGE'} ` +
+          `chars=${generatedText.length} found=${foundKeywords.join('|') || 'none'}`
+      )
 
       t.ok(
         foundKeywords.length >= 2,
