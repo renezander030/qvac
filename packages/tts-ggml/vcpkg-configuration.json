@@ -1,7 +1,7 @@
 {
   "default-registry": {
     "kind": "git",
-    "baseline": "f88fb6e1f44de4afae7579f3069d1e5575703dd0",
+    "baseline": "4eead52ad067d97fe8604578195b98d8d5ebbce3",
     "reference": "preflight/QVAC-22652-cosyvoice-ios-memory",
     "repository": "https://github.com/tetherto/qvac-registry-vcpkg.git"
   },
