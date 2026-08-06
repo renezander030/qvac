@@ -97,9 +97,7 @@ runs:
           find "$dest" -depth -name 'tetherto_*' | while read -r f; do
             mv "$f" "$(dirname "$f")/$(basename "$f" | sed 's/^tetherto_/qvac_/')"
           done
-        done <<EOF
-$(find $SEARCH -type d -path "*/node_modules/@qvac/fabric" 2>/dev/null | sort -u || true)
-EOF
+        done < <(find $SEARCH -type d -path "*/node_modules/@qvac/fabric" 2>/dev/null | sort -u || true)
 
         if [ "$found_pkg" != "true" ]; then
           echo "::error::No installed @qvac/fabric found under $SEARCH"
