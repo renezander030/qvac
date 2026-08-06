@@ -48,14 +48,6 @@ runs:
           SEARCH="$SEARCH $SEARCH_DIRS"
         fi
 
-        mapfile -t PKG_DIRS < <(
-          find $SEARCH -type d -path "*/node_modules/@qvac/fabric" 2>/dev/null | sort -u || true
-        )
-        if [ "${#PKG_DIRS[@]}" -eq 0 ]; then
-          echo "::error::No installed @qvac/fabric found under $SEARCH"
-          exit 1
-        fi
-
         overlay_tree() {
           local dest_root="$1"
           mkdir -p "$dest_root"
@@ -94,11 +86,22 @@ runs:
           done
         }
 
-        for pkg in "${PKG_DIRS[@]}"; do
+        # Portable bash (macOS /bin/bash is 3.2 — no mapfile).
+        found_pkg=false
+        while IFS= read -r pkg; do
+          [ -z "$pkg" ] && continue
+          found_pkg=true
           dest="$pkg/prebuilds"
           echo "Overlaid PR fabric prebuilds into $dest"
           overlay_tree "$dest"
           find "$dest" -depth -name 'tetherto_*' | while read -r f; do
             mv "$f" "$(dirname "$f")/$(basename "$f" | sed 's/^tetherto_/qvac_/')"
           done
-        done
+        done <<EOF
+$(find $SEARCH -type d -path "*/node_modules/@qvac/fabric" 2>/dev/null | sort -u || true)
+EOF
+
+        if [ "$found_pkg" != "true" ]; then
+          echo "::error::No installed @qvac/fabric found under $SEARCH"
+          exit 1
+        fi
