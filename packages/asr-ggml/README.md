@@ -630,6 +630,53 @@ npm run test:benchmark:rtf:matrix
 workflow. Aggregated historical results:
 [`benchmarks/results/results_summary.md`](benchmarks/results/results_summary.md).
 
+### Parakeet Core ML (Apple Neural Engine) RTF lanes
+
+On darwin-arm64 the RTF matrix additionally benchmarks the parakeet TDT/CTC
+models with the engine's Core ML encoder sidecar (`coreml: true` entries,
+reported as backend `coreml`). The sidecar drives only the offline
+FastConformer encoder on the Neural Engine; the decoder stays on the ggml
+backend selected by `useGPU`.
+
+How the lane works:
+
+1. `test/integration/parakeet-models.manifest.json` declares zipped sidecars
+   under `coremlSidecars` (a compiled `.mlmodelc` is a directory, so S3 stores
+   it zipped, e.g. `parakeet-tdt-0.6b-v3-encoder.mlmodelc.zip`).
+2. `scripts/stage-integration-models.mjs` stages + extracts them into
+   `models/coreml/` (darwin only).
+3. `scripts/run-rtf-benchmark-matrix.js` links the matching GGUF next to the
+   sidecar for `coreml: true` entries only — plain cpu/metal entries keep the
+   sidecar-free `models/` copy — and the benchmark fails the lane if
+   `stats.encoderOnCoreml` does not report 1 (and conversely fails cpu/metal
+   lanes if a stray sidecar loads).
+
+Publishing a sidecar (once per model, from a macOS arm64 host):
+
+```bash
+# The sidecar loads for any input but runs on the ANE ONLY at its traced mel
+# length, so export against the exact audio the RTF benchmark feeds
+# (examples/parakeet-samples/sample.raw, 16 kHz mono s16le):
+ffmpeg -f s16le -ar 16000 -ac 1 -i examples/parakeet-samples/sample.raw /tmp/rtf-sample.wav
+
+# In a tetherto/qvac-ext-lib-whisper.cpp checkout at the parakeet-cpp port's
+# pinned rev (needs torch>=2.3, coremltools>=8):
+python engines/parakeet/scripts/export-encoder-coreml.py \
+  --gguf models/parakeet-tdt-0.6b-v3.f16.gguf \
+  --wav /tmp/rtf-sample.wav \
+  --out parakeet-tdt-0.6b-v3-encoder.mlpackage \
+  --compile-dir .   # prints ANE placement — verify ops land on the ANE
+
+zip -r parakeet-tdt-0.6b-v3-encoder.mlmodelc.zip parakeet-tdt-0.6b-v3-encoder.mlmodelc
+# Upload to s3://$MODEL_S3_BUCKET/qvac_models_compiled/coreml/parakeet/<date>/
+# and add the coremlSidecars manifest entry (s3Path + sha256 + bytes).
+```
+
+One sidecar serves every quant of its model (the engine strips the quant tag
+when resolving `<stem>-encoder.mlmodelc`). Until a sidecar is published the
+matrix runner skips its coreml entries loudly and the aggregated report lists
+`coreml` under parakeet's missing GPU backends.
+
 ## Examples
 
 Whisper:

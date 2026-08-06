@@ -450,7 +450,31 @@ test('coverage reports GPU backends per engine as well as overall', () => {
   // The parakeet row is CPU-only, so parakeet still has zero GPU coverage even
   // though the overall table shows vulkan.
   assert.deepEqual(coverage.byEngine.parakeet.gpuBackendsCovered, [])
-  assert.deepEqual(coverage.byEngine.parakeet.missingBackends, ['vulkan', 'metal', 'opencl'])
+  // coreml is in parakeet's expected set (ANE encoder sidecar lane) but not
+  // whisper's (the whisper-cpp port builds without WHISPER_COREML).
+  assert.deepEqual(coverage.byEngine.parakeet.missingBackends, ['vulkan', 'metal', 'opencl', 'coreml'])
+  assert.deepEqual(coverage.byEngine.whisper.missingBackends, ['metal', 'opencl'])
+})
+
+test('parakeet coreml lane keeps its backend label and satisfies coverage', () => {
+  const report = parakeetDesktopReport(true)
+  report.platform = 'darwin-arm64'
+  report.platformName = 'darwin'
+  report.labels = { device: 'qvac-macos26-arm64-gpu', backend: 'coreml' }
+  const record = normalizeDesktopRecord(report, 'rtf-benchmark-darwin-arm64-tdt-q8_0-gpu-coreml.json')
+  assert.equal(record.backend, 'coreml')
+  assert.equal(record.gpu, 'gpu')
+
+  const coverage = buildCoverage([record])
+  assert.deepEqual(coverage.byEngine.parakeet.gpuBackendsCovered, ['coreml'])
+  assert.ok(!coverage.byEngine.parakeet.missingBackends.includes('coreml'))
+  // A coreml row must not collapse into the metal row of the same device.
+  const metalReport = parakeetDesktopReport(true)
+  metalReport.platform = 'darwin-arm64'
+  metalReport.platformName = 'darwin'
+  metalReport.labels = { device: 'qvac-macos26-arm64-gpu', backend: 'metal' }
+  const metalRecord = normalizeDesktopRecord(metalReport, 'rtf-benchmark-darwin-arm64-tdt-q8_0-gpu.json')
+  assert.equal(dedupeRecords([record, metalRecord]).length, 2)
 })
 
 test('markdown table carries the Engine column, memory columns and per-engine coverage', () => {

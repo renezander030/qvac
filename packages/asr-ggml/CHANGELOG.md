@@ -12,6 +12,20 @@ restarts at `0.1.0`; the two pre-merge histories are preserved verbatim as
 [`docs/WHISPER-CHANGELOG.md`](docs/WHISPER-CHANGELOG.md) and
 [`docs/PARAKEET-CHANGELOG.md`](docs/PARAKEET-CHANGELOG.md).
 
+## [Unreleased]
+
+### Added
+
+- Parakeet Core ML (Apple Neural Engine) RTF benchmark lanes on darwin-arm64:
+  `coreml: true` matrix entries stage the engine's `<stem>-encoder.mlmodelc`
+  sidecar (declared under `coremlSidecars` in
+  `test/integration/parakeet-models.manifest.json`, zipped in the QVAC model
+  registry) next to a per-lane copy of the GGUF, and the RTF benchmark fails
+  the lane unless `stats.encoderOnCoreml` confirms the sidecar loaded (and
+  fails cpu/metal lanes if a stray sidecar loads). Reports label the lane
+  backend `coreml`. Benchmark harness only — no addon or JavaScript API
+  change.
+
 ## [0.2.0] - 2026-08-06
 
 ### Changed

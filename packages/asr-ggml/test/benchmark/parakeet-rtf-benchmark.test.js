@@ -125,6 +125,11 @@ function getBenchmarkSettings() {
     numWarmup: getEnvInteger('QVAC_PARAKEET_BENCHMARK_WARMUP_RUNS', 1),
     numRuns: getEnvInteger('QVAC_PARAKEET_BENCHMARK_RUNS', isMobile ? 3 : 5),
     useGPU: getEnvBoolean('QVAC_PARAKEET_BENCHMARK_USE_GPU', false),
+    // Set by the matrix runner for `coreml: true` entries after it staged the
+    // Core ML encoder sidecar next to the GGUF: the lane must FAIL when the
+    // sidecar did not load, or it would silently measure the ggml backend
+    // while labelled coreml.
+    expectCoreml: getEnvBoolean('QVAC_PARAKEET_BENCHMARK_COREML', false),
     backendHint,
     deviceLabel,
     runnerLabel,
@@ -160,8 +165,10 @@ function getUpperBound(benchmarkSettings) {
 //   - darwin / ios:   Metal
 //   - linux / win32:  Vulkan
 //   - android:        Vulkan (Adreno: OpenCL fallback)
-// (The previous coreml/nnapi/auto-gpu names were ONNX-era and never matched
-// the GGML runtime, which reports the real backend via stats.backendId.)
+// A 'coreml' hint names the Apple Neural Engine encoder sidecar lane (the
+// matrix runner stages `<stem>-encoder.mlmodelc` next to the GGUF and the
+// engine's presence-driven loader picks it up; the TDT/CTC decoder stays on
+// the ggml backend). The old ONNX-era nnapi/auto-gpu names remain invalid.
 function getRequestedBackendFamily(platformName, useGPU, backendHint) {
   if (backendHint) return backendHint
   if (!useGPU) return 'cpu'
@@ -302,6 +309,8 @@ test('RTF benchmark: collect real-time factor on CI device', { timeout: 600000 }
   console.log(`  Model type:     ${benchmarkSettings.modelType}`)
   console.log(`  Quant:          ${benchmarkSettings.resolvedQuant || 'default'}`)
   console.log(`  GPU requested:  ${benchmarkSettings.useGPU}`)
+  if (benchmarkSettings.expectCoreml)
+    console.log('  CoreML sidecar: expected (lane fails if it does not load)')
   if (benchmarkSettings.backendHint)
     console.log(`  Backend hint:   ${benchmarkSettings.backendHint}`)
   if (benchmarkSettings.deviceLabel)
@@ -333,6 +342,12 @@ test('RTF benchmark: collect real-time factor on CI device', { timeout: 600000 }
 
   const allResults = []
   let observedBackendId = null
+  // 1 when the Core ML encoder sidecar loaded (stats.encoderOnCoreml).
+  // NOTE: this reports the loaded sidecar, not per-utterance routing — a
+  // fixed-shape sidecar traced at a different mel length would load (=1) yet
+  // fall back to the ggml encoder every run. The sidecar export is therefore
+  // pinned to this benchmark's sample length (see docs/PARAKEET-README.md).
+  let observedEncoderOnCoreml = 0
   let model = new ASRGgml({
     files: { model: modelPath },
     config: {
@@ -437,12 +452,14 @@ test('RTF benchmark: collect real-time factor on CI device', { timeout: 600000 }
         totalWallMs: jobStats.totalWallMs || 0,
         backendDevice: typeof jobStats.backendDevice === 'number' ? jobStats.backendDevice : null,
         backendId: typeof jobStats.backendId === 'number' ? jobStats.backendId : null,
+        encoderOnCoreml: jobStats.encoderOnCoreml ? 1 : 0,
         avgRssBytes: runMemory.avgBytes,
         peakRssBytes: runMemory.peakBytes,
         rssSampleCount: runMemory.count
       }
 
       if (run.backendId !== null) observedBackendId = run.backendId
+      if (run.encoderOnCoreml) observedEncoderOnCoreml = 1
 
       allResults.push(run)
 
@@ -480,6 +497,15 @@ test('RTF benchmark: collect real-time factor on CI device', { timeout: 600000 }
 
     const memorySummary = await measureMemory(model, allResults, rssBeforeLoad, rssAfterLoad)
     model = null
+
+    // The report's active backend: 'coreml' when the Apple Neural Engine
+    // encoder sidecar drove the encoder (the decoder stays on the ggml
+    // backend named by backendId), else the ggml backend family.
+    const activeBackend = observedEncoderOnCoreml
+      ? 'coreml'
+      : observedBackendId !== null
+        ? backendIdToName(observedBackendId)
+        : ''
 
     console.log('\n' + '='.repeat(70))
     console.log('RTF BENCHMARK RESULTS')
@@ -544,7 +570,7 @@ test('RTF benchmark: collect real-time factor on CI device', { timeout: 600000 }
           benchmarkSettings.useGPU,
           benchmarkSettings.backendHint
         ),
-        activeBackend: observedBackendId !== null ? backendIdToName(observedBackendId) : '',
+        activeBackend,
         gpuModel: _hwGpu() || backendGpuModel,
         requestedBackend: benchmarkSettings.useGPU ? 'gpu' : 'cpu',
         label: benchmarkSettings.label
@@ -580,7 +606,8 @@ test('RTF benchmark: collect real-time factor on CI device', { timeout: 600000 }
         decoderMs: decoderStats,
         memory: memorySummary,
         backendId: observedBackendId,
-        activeBackend: observedBackendId !== null ? backendIdToName(observedBackendId) : ''
+        encoderOnCoreml: observedEncoderOnCoreml,
+        activeBackend
       },
       runs: allResults
     }
@@ -599,7 +626,7 @@ test('RTF benchmark: collect real-time factor on CI device', { timeout: 600000 }
         benchmarkSettings.useGPU,
         benchmarkSettings.backendHint
       ),
-      activeBackend: observedBackendId !== null ? backendIdToName(observedBackendId) : '',
+      activeBackend,
       deviceLabel: benchmarkSettings.deviceLabel,
       runnerLabel: benchmarkSettings.runnerLabel,
       summary: report.summary
@@ -625,6 +652,19 @@ test('RTF benchmark: collect real-time factor on CI device', { timeout: 600000 }
     )
 
     t.ok(rtfStats.mean > 0, 'Mean RTF should be positive')
+
+    // Both directions matter: a coreml lane whose sidecar failed to load
+    // would measure the ggml backend under a coreml label, and a cpu/metal
+    // lane that picked up a stray sidecar would measure coreml under a ggml
+    // label.
+    if (benchmarkSettings.expectCoreml) {
+      t.ok(observedEncoderOnCoreml === 1, 'Core ML encoder sidecar loaded (encoderOnCoreml=1)')
+    } else {
+      t.ok(
+        observedEncoderOnCoreml === 0,
+        'Encoder stayed on the ggml backend (no stray Core ML sidecar next to the GGUF)'
+      )
+    }
 
     if (upperBound !== null) {
       t.ok(
