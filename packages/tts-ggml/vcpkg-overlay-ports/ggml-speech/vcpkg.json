@@ -1,0 +1,57 @@
+{
+  "name": "ggml-speech",
+  "version-date": "2026-08-07",
+  "description": "Speech-stack ggml flavour (tetherto/qvac-ext-ggml@speech). This pin fixes the Vulkan matmul src0 binding for strided views and prefers host memory on unified-memory adapters (PR #53), and brings ACE-Step up on Adreno OpenCL with a much faster 1-D convolution path (PR #52). ggml_vk_mul_mat_q_f16 and ggml_vk_mul_mat_id_q_f16 built the src0 subbuffer from the view's elements counted as if they were packed, but a src0 read in place is walked by the shader with the real channel stride (ggml_vk_channel_stride_elements), so for a view whose nb[2] spans more rows than the view exposes -- a KV-cache window out of a max_seq cache -- every channel past the first was addressed beyond the end of the binding: for MUL_MAT(f16, m=32, m_alloc=96, k=256, channels=2), channel 1 starts at byte 49152 against a 32768-byte range. Whether that read returns the right bytes, zeroes or garbage is up to the driver, which is why it went unnoticed on desktop and produced wrong, run-to-run-varying results on a Samsung Xclipse 920. Sizing from ggml_nbytes(src0) spans nb[] and equals the old value for a genuinely packed tensor, so it only ever widens a range and cannot change a path that works today; test-backend-ops -o MUL_MAT -b Vulkan0 -p m_alloc goes 0/8 -> 8/8 on the device, and the ACE-Step LM, whose KV window is exactly this shape, goes from a degenerate repeated-token greedy decode to a stable trajectory in the same range the CPU reference occupies. Separately, ggml_vk_create_buffer_device preferred device-local memory, which on a unified-memory adapter buys nothing but a staging copy, so prefer_host_memory now defaults on when the device reports UMA: ACE-Step q8_0 with every stage on the GPU goes 25114 -> ~20000 ms total and the DiT stage 10792 -> 7804 ms on that device, with a byte-identical render. On OpenCL the pin adds snake and col2im_1d kernels and bf16 get_rows, slices N in the Adreno xmem GEMM so a wide-N matmul (M=512, N=30720, 951 ms of a 4080 ms VAE decode) stops falling back past image2d_max_width, raises the f16xf16 matvec to 16 columns per workgroup, and rewrites im2col. im2col put the output position on the fastest-varying work-item index while dst is addressed as (... + ix)*CHW + col, so adjacent lanes stored CHW elements apart -- 1792 bytes for this model, one cache line per 2-byte store -- and it did 64-bit integer division twice per element, which Adreno emulates in software; profiled with GGML_OPENCL_PROFILING=ON it was 81% of the ACE-Step VAE decode on an Adreno 740 (34.9 s of 43.1 s). One workgroup per output position now walks that position's contiguous CHW columns in 32-bit index math, skipping the second division when KH == 1: im2col 34944 -> 205 ms (170x) and whole VAE decode GPU exec 43064 -> 8376 ms (5.1x). im2col is a pure gather, so this is bit-exact (IM2COL 88/88, CONV_2D 1568/1568, CONV_2D_DW 8/8 on GPUOpenCL; rendered audio CPU-vs-OpenCL cosine 0.99998563) and it helps every conv1d/conv2d model on OpenCL, not just ACE-Step. Carries Metal CPY from the k-quants to F32/F16 and the Metal im2col threadgroup sizing (PR #51), the unaligned-M Adreno OpenCL im2col fusion (PR #50), the Adreno OpenCL Parler-TTS fixes (PR #49), Vulkan CPY from the k-quants to F32 (PR #47), the GGML_PREC_F32 work on Vulkan and Metal (PR #46) and the Vulkan ACE-Step Oobleck VAE custom ops (PR #45). CPU output is unchanged.",
+  "homepage": "https://github.com/tetherto/qvac-ext-ggml/tree/speech",
+  "license": "MIT",
+  "dependencies": [
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    }
+  ],
+  "default-features": [
+    {
+      "name": "metal",
+      "platform": "osx | ios"
+    },
+    {
+      "name": "opencl",
+      "platform": "android"
+    },
+    {
+      "name": "vulkan",
+      "platform": "windows | linux | android"
+    }
+  ],
+  "features": {
+    "cuda": {
+      "description": "Enable CUDA GPU backend"
+    },
+    "metal": {
+      "description": "Enable Metal GPU backend (macOS/iOS)"
+    },
+    "metal-fuse-mv-bias": {
+      "description": "Compile in the Q-variant mul_mv + ADD(bias) [+ ADD(residual)] fusion in ggml-metal. Off by default: empirically produces zero tokens on parakeet's EOU q8_0 joint network. Opt in only after Metal A/B-validating your model against the fused path."
+    },
+    "opencl": {
+      "description": "Enable OpenCL GPU backend",
+      "dependencies": [
+        "opencl"
+      ]
+    },
+    "vulkan": {
+      "description": "Enable Vulkan GPU backend",
+      "dependencies": [
+        {
+          "name": "spirv-headers",
+          "version>=": "1.4.341.0"
+        }
+      ]
+    }
+  }
+}

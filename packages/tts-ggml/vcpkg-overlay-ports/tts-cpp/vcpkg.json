@@ -1,0 +1,82 @@
+{
+  "name": "tts-cpp",
+  "version-date": "2026-08-07",
+  "description": "Text-to-speech in pure C++/ggml: Resemble Chatterbox (Turbo + Multilingual), Supertonic, Fun-CosyVoice3, Parler-TTS (CPU + Metal / Vulkan / OpenCL GPU), and LavaSR speech enhancement. Sourced from tetherto/qvac-ext-lib-whisper.cpp (engines/tts). This republish advances the pin from 5bf602e7 to master 5e57a692 and raises the ggml-speech floor to 2026-08-07. engines/tts is byte-identical between those commits -- everything in between lands in engines/audiogen -- so there is no engine change here: the move is for the single source archive shared with the whisper-cpp, parakeet-cpp and audiogen-cpp ports, so the speech addons stage one identical set of libqvac-speech-ggml-* backend libraries rather than divergent ones, and for the ggml itself. That ggml move carries substance for this port. PR #53 sizes the Vulkan matmul src0 binding from nb[] instead of the view's elements counted as if packed, so a strided src0 view stops addressing reads past the end of its descriptor -- driver-dependent corruption reachable by any graph that holds such a view -- and defaults prefer_host_memory on unified-memory adapters, which covers every Android GPU this port targets. PR #52 rewrites the OpenCL im2col on its default path, the hot path for the convolution-heavy Parler DAC and LavaSR on Adreno; im2col is a pure gather, so the rewrite is bit-exact. The pin continues to enable LavaSR enhancer execution on ARM Mali Vulkan and to pad small Valhall GEMM dimensions to preserve numerical correctness (PR #123), validated on Pixel 9a with CPU/GPU cosine similarity 1.0 and through the tts-ggml Device Farm suite. It carries the CosyVoice3 win32 model-load fix (PR #124), CosyVoice3 + Parler iOS memory reductions (PR #121), Parler Vulkan-on-Mali (PR #119), CosyVoice3 GPU support (PR #118), dl-safe backend initialization (PR #117), bounded Parler DAC decode (PR #114), Parler Vulkan (PR #110), Parler Metal (PR #103), and the original CosyVoice3 engine (PR #99).",
+  "homepage": "https://github.com/tetherto/qvac-ext-lib-whisper.cpp/tree/master/engines/tts",
+  "license": "MIT",
+  "dependencies": [
+    {
+      "name": "ggml-speech",
+      "version>=": "2026-08-07"
+    },
+    "mecab",
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    }
+  ],
+  "default-features": [
+    {
+      "name": "metal",
+      "platform": "osx | ios"
+    },
+    {
+      "name": "opencl",
+      "platform": "android"
+    },
+    {
+      "name": "vulkan",
+      "platform": "windows | linux | android"
+    }
+  ],
+  "features": {
+    "cuda": {
+      "description": "Enable CUDA GPU acceleration",
+      "dependencies": [
+        {
+          "name": "ggml-speech",
+          "features": [
+            "cuda"
+          ]
+        }
+      ]
+    },
+    "metal": {
+      "description": "Enable Metal GPU acceleration (macOS / iOS)",
+      "dependencies": [
+        {
+          "name": "ggml-speech",
+          "features": [
+            "metal"
+          ]
+        }
+      ]
+    },
+    "opencl": {
+      "description": "Enable OpenCL GPU acceleration (Android / Adreno)",
+      "dependencies": [
+        {
+          "name": "ggml-speech",
+          "features": [
+            "opencl"
+          ]
+        }
+      ]
+    },
+    "vulkan": {
+      "description": "Enable Vulkan GPU acceleration",
+      "dependencies": [
+        {
+          "name": "ggml-speech",
+          "features": [
+            "vulkan"
+          ]
+        }
+      ]
+    }
+  }
+}

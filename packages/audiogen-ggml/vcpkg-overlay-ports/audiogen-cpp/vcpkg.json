@@ -1,0 +1,81 @@
+{
+  "name": "audiogen-cpp",
+  "version-date": "2026-08-07",
+  "description": "ACE-Step text-to-music engine in pure C++/ggml, from qvac-ext-lib-whisper.cpp's engines/audiogen. This pin (merged commit 5e57a692, PRs #126 and #129) runs the whole pipeline on Adreno OpenCL. Four things blocked bring-up, all confirmed on an Adreno 740: music-cli and acestep-cli never set backends_dir, so on a GGML_BACKEND_DL build the registry was empty and even the CPU backend failed to init; ggml_backend_init_by_type(GPU) returns the first GPU device and ggml loads Vulkan before OpenCL, so an Adreno device always got Vulkan, which the Adreno-700+-prefers-OpenCL tier policy from engines/tts now corrects while every other platform keeps ggml's existing choice; the FSQ detokenizer kept fsq_proj (BF16) and special_tokens (quantised) in their GGUF types, putting a BF16 mul_mat and a repeated quantised-to-F32 cast in the decode loop; and encoder.timbre_encoder.embed_tokens is BF16 in the Q4_K_M checkpoint and feeds a cond-encoder mul_mat that runs on the GPU by default, an unconditional abort on every q4 generate. Those three small tensors are now materialised as F32 at load, which is exact (BF16 widening is lossless and the dequantiser is the one ggml_cast would call) and costs ~64 KB; large BF16 tensors consumed by get_rows are deliberately left native so the text-encoder embedding does not undo the sequential-stage-loading memory work. The VAE progress callback also answered the scheduler's node probe with true for every node, so a 166-node decode window became 166 single-node submissions and 166 full pipeline drains; it now ticks every 16 nodes, and is not installed at all when the caller passed no progress or cancel callback (isolated VAE decode, T_latent=32: CPU 19.7 -> 4.46 s, OpenCL 44.6 -> 37.0 s, output unchanged at CPU-vs-OpenCL cosine 0.99998563). Two defects then surfaced only on real input. The lyric encoder's residual stream reaches 4.17e5 at hidden channel 259, a massive-activation channel that is the per-row argmax from layer 0 on and ~6x past fp16 max, so a backend that stages activations as half saturates it to inf and the next rms_norm turns the row into zeros plus one NaN: 2 bad values out of 368640 made the DiT latent 100% NaN and the render came out as digital silence with exit code 0 and nothing logged. The encoder now runs at GGML_PREC_F32, the sanctioned request that ggml-opencl already honours and that the ACE-Step LM already used; replaying the exact recorded inputs from a failing render on a vivo I2212 / Adreno 740 gives zero non-finite values and zero wiped rows 3/3 runs, cosine 0.99997 against the CPU reference, and a full 30 s generate() that runs every stage on OpenCL and correlates 0.9949 with the known-good render of the same codes. CPU output is byte-identical because CPU ignores prec, and Metal moves by 0.4% on one element (cosine 0.9999999966), ending marginally closer to the CPU reference. Separately, a 30 s decode aborted with 'failed to allocate 1155.00 MiB' on a device that reports a 1024 MB max allocation: the overlapping-window VAE decode existed for iOS Metal but its window was hardcoded at 256 core frames, so it is now sized from the active backend's allocation limit and is a no-op wherever that limit is unset. The ggml-speech floor moves to 2026-08-07 as a hard dependency: the Oobleck VAE needs the OpenCL snake and col2im_1d kernels added in ggml PR #52, together with the im2col rewrite that takes that stage from 81% of decode time down to 205 ms.",
+  "homepage": "https://github.com/tetherto/qvac-ext-lib-whisper.cpp/tree/master/engines/audiogen",
+  "license": "MIT",
+  "dependencies": [
+    {
+      "name": "ggml-speech",
+      "version>=": "2026-08-07"
+    },
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    }
+  ],
+  "default-features": [
+    {
+      "name": "metal",
+      "platform": "osx | ios"
+    },
+    {
+      "name": "opencl",
+      "platform": "android"
+    },
+    {
+      "name": "vulkan",
+      "platform": "windows | linux | android"
+    }
+  ],
+  "features": {
+    "cuda": {
+      "description": "Enable CUDA GPU acceleration",
+      "dependencies": [
+        {
+          "name": "ggml-speech",
+          "features": [
+            "cuda"
+          ]
+        }
+      ]
+    },
+    "metal": {
+      "description": "Enable Metal GPU acceleration (macOS / iOS)",
+      "dependencies": [
+        {
+          "name": "ggml-speech",
+          "features": [
+            "metal"
+          ]
+        }
+      ]
+    },
+    "opencl": {
+      "description": "Enable OpenCL GPU acceleration (Android / Adreno)",
+      "dependencies": [
+        {
+          "name": "ggml-speech",
+          "features": [
+            "opencl"
+          ]
+        }
+      ]
+    },
+    "vulkan": {
+      "description": "Enable Vulkan GPU acceleration",
+      "dependencies": [
+        {
+          "name": "ggml-speech",
+          "features": [
+            "vulkan"
+          ]
+        }
+      ]
+    }
+  }
+}
