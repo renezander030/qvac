@@ -3,7 +3,7 @@
     "kind": "git",
     "baseline": "84693039e50c151d9d2c1d3f9981ce64c89c5f5e",
     "repository": "https://github.com/tetherto/qvac-registry-vcpkg.git",
-    "reference": "QVAC-23306"
+    "reference": "QVAC-23306/acestep-dcw-quality-parity"
   },
   "registries": [
     {
