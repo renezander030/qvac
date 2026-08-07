@@ -162,8 +162,9 @@ export const llmPlugin = definePlugin({
       requestSchema: batchCompletionStreamRequestSchema,
       responseSchema: batchCompletionStreamResponseSchema,
       streaming: true,
-      // Per-request cancel: aborting one batch cancels only its own group
-      // (addon cancelJob), leaving concurrent peers on the model decoding.
+      // Request-scope, not model: under continuous batching several jobs share
+      // the model, so a model-wide cancel would stop concurrent peers. The abort
+      // routes through this batch's response to the addon's per-group cancelJob.
       cancel: { scope: 'request', hard: true },
 
       handler: async function* (request) {
@@ -340,9 +341,9 @@ export const llmPlugin = definePlugin({
       requestSchema: completionStreamRequestSchema,
       responseSchema: completionStreamResponseSchema,
       streaming: true,
-      // Per-request cancel: aborting one completion cancels only its own
-      // native job (via the response), leaving concurrent completions on the
-      // same model running.
+      // Request-scope, not model: under continuous batching several jobs share
+      // the model, so a model-wide cancel would stop concurrent peers. The abort
+      // routes through this run's response to the addon's per-job cancelJob.
       cancel: { scope: 'request', hard: true },
 
       handler: async function* (request) {
