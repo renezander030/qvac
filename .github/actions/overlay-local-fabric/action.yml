@@ -48,7 +48,9 @@ runs:
           exit 1
         fi
 
-        SEARCH="$WORKDIR $GITHUB_WORKSPACE"
+        WORK_ABS="$(cd "$WORKDIR" && pwd)"
+        WS_ABS="$(cd "$GITHUB_WORKSPACE" && pwd)"
+        SEARCH="$WORK_ABS $WS_ABS"
         if [ -n "$SEARCH_DIRS" ]; then
           SEARCH="$SEARCH $SEARCH_DIRS"
         fi
@@ -103,7 +105,12 @@ runs:
           find "$dest" -depth -name 'tetherto_*' | while read -r f; do
             mv "$f" "$(dirname "$f")/$(basename "$f" | sed 's/^tetherto_/qvac_/')"
           done
-        done < <(find $SEARCH -type d -path "*/node_modules/@qvac/fabric" 2>/dev/null | sort -u || true)
+        done < <(
+          for search_root in $SEARCH; do
+            [ -d "$search_root" ] || continue
+            find "$search_root" -type d -path "*/node_modules/@qvac/fabric" 2>/dev/null || true
+          done | awk '!seen[$0]++'
+        )
 
         if [ "$found_pkg" != "true" ]; then
           echo "::error::No installed @qvac/fabric found under $SEARCH"
