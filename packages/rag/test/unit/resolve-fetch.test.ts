@@ -1,17 +1,15 @@
-'use strict'
-
-const test = require('brittle')
-const resolveFetch = require('../../src/shims/resolve-fetch')
-const fetchImport = require('#fetch')
+import test from 'brittle'
+import resolveFetch, * as resolveFetchModule from '../../src/shims/resolve-fetch.js'
+import * as fetchImport from '#fetch'
 
 test('resolveFetch: returns a callable fetch implementation', (t) => {
   const fetch = resolveFetch()
   t.is(typeof fetch, 'function', 'Should return a function')
 })
 
-test('resolveFetch: exposes a default export that aliases the same function', (t) => {
+test('resolveFetch: default export is the resolveFetch function', (t) => {
   t.is(typeof resolveFetch, 'function', 'Module export should be a function')
-  t.is(resolveFetch.default, resolveFetch, 'default property should reference the same function')
+  t.is(resolveFetchModule.default, resolveFetch, 'Namespace default matches the default import')
 })
 
 test('resolveFetch: resolves the same fetch implementation as #fetch', (t) => {
