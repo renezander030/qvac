@@ -200,7 +200,7 @@ completionStream: defineHandler({
 `cancel.scope`:
 
 - `"request"` — addon targets a specific in-flight request by id. Framework can route `cancel({ requestId })` straight to the addon without colliding with siblings on the same model.
-- `"model"` — addon cancels "whatever is currently running on this model" (`addon.cancel()` semantics). Under continuous batching this also stops concurrent peers on the same model, so it is a coarse fallback, not a per-request cancel. `batchCompletionStream` still uses it, pending a per-batch addon handle.
+- `"model"` — addon cancels "whatever is currently running on this model" (`addon.cancel()` semantics). Under continuous batching this also stops concurrent peers on the same model, so it is a coarse fallback, not a per-request cancel. `translate` and `finetune` use it; `completionStream` and `batchCompletionStream` route per-request cancel through the run response instead.
 - `"none"` — addon does not expose a cancel surface. SDK falls back to soft-cancel (stop yielding, drop result, skip post-processing; C++ work runs to completion).
 
 `cancel.hard` (only meaningful for `"model"` / `"request"`):
@@ -215,7 +215,7 @@ Omitting the field entirely is equivalent to `{ scope: "none" }`. The runtime sc
 | Plugin                       | Handler(s)                            | `cancel`                          |
 |------------------------------|---------------------------------------|-----------------------------------|
 | `llamacpp-completion`        | `completionStream`                    | `{ scope: "request", hard: true }`|
-| `llamacpp-completion`        | `batchCompletionStream`               | `{ scope: "model", hard: true }`  |
+| `llamacpp-completion`        | `batchCompletionStream`               | `{ scope: "request", hard: true }`|
 | `llamacpp-completion`        | `translate`                           | `{ scope: "model", hard: true }`  |
 | `llamacpp-completion`        | `finetune`                            | `{ scope: "model", hard: true }`  |
 | `llamacpp-embedding`         | `embed`                               | `{ scope: "model", hard: true }`  |
