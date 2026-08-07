@@ -93,6 +93,78 @@ test(
   }
 )
 
+function samplesEqual(a, b) {
+  if (!a || !b || a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false
+  }
+  return true
+}
+
+test(
+  'CosyVoice3 TTS (ggml): emotion changes the audio; per-call switch needs no reload',
+  { timeout: 900000 },
+  async (t) => {
+    const baseDir = getBaseDir()
+    const download = await ensureCosyvoiceModel({
+      targetDir: path.join(baseDir, 'models', 'cosyvoice3')
+    })
+    if (!download.success) {
+      t.fail(MODEL_MISSING)
+      return
+    }
+
+    // greedy + a fixed seed: the LM is chaotic in the logits, so without a
+    // pinned trajectory a before/after comparison would just measure sampling.
+    const model = await loadCosyvoiceTTS({
+      cosyvoiceModelDir: download.modelDir,
+      greedy: true,
+      seed: 42
+    })
+    try {
+      const text = 'Hello from CosyVoice.'
+      const happy = await runCosyvoiceTTS(
+        model,
+        { text, perCallEmotion: 'happy' },
+        { minSamples: 1 }
+      )
+      const sad = await runCosyvoiceTTS(model, { text, perCallEmotion: 'sad' }, { minSamples: 1 })
+      t.ok(happy.passed && sad.passed, 'both per-call emotions synthesize')
+      t.ok(
+        !samplesEqual(happy.data.samples, sad.data.samples),
+        'happy and sad produce different audio without a reload'
+      )
+
+      // neutral is defined as "emit no instruction", i.e. the zero-shot path.
+      const neutral = await runCosyvoiceTTS(
+        model,
+        { text, perCallEmotion: 'neutral' },
+        { minSamples: 1 }
+      )
+      const plain = await runCosyvoiceTTS(model, { text }, { minSamples: 1 })
+      t.ok(
+        samplesEqual(neutral.data.samples, plain.data.samples),
+        'neutral is the unconditioned zero-shot path, not a fourth instruction'
+      )
+
+      const bad = await runCosyvoiceTTS(
+        model,
+        { text, perCallEmotion: 'surprise' },
+        { minSamples: 1 }
+      )
+      t.absent(bad.passed, 'an emotion cosyvoice was not trained on is rejected')
+      t.ok(
+        /not supported by the cosyvoice3 engine/.test(bad.output),
+        `the rejection names the engine set (got: ${bad.output})`
+      )
+    } finally {
+      try {
+        await model.unload()
+      } catch (_e) {}
+    }
+  }
+)
+
 test(
   'CosyVoice3 TTS (ggml): instruct conditioning produces audio',
   { timeout: 600000 },
@@ -106,10 +178,9 @@ test(
       return
     }
 
-    // instruct is a constructor-level control, so build the model with it.
     const model = await loadCosyvoiceTTS({
       cosyvoiceModelDir: download.modelDir,
-      instruct: { emotion: 'happy' }
+      emotion: 'happy'
     })
     try {
       const text = 'Hello from CosyVoice.'
