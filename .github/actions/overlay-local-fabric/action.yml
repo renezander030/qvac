@@ -20,6 +20,10 @@ inputs:
     description: 'Platform arch suffix (x64, arm64, ...) paired with platform'
     required: false
     default: ''
+  tags:
+    description: 'Optional platform suffix (e.g. -simulator for ios-*-simulator jobs)'
+    required: false
+    default: ''
   search-dirs:
     description: 'Extra directories to search for node_modules/@qvac/fabric (space-separated)'
     required: false
@@ -35,6 +39,7 @@ runs:
         SRC: ${{ inputs.prebuilds-root }}
         PLATFORM: ${{ inputs.platform }}
         ARCH: ${{ inputs.arch }}
+        TAGS: ${{ inputs.tags }}
         SEARCH_DIRS: ${{ inputs.search-dirs }}
       run: |
         set -euo pipefail
@@ -62,13 +67,14 @@ runs:
           fi
 
           if [ -n "$PLATFORM" ] && [ -n "$ARCH" ]; then
-            plat_dir="$SRC/${PLATFORM}-${ARCH}"
+            plat_key="${PLATFORM}-${ARCH}${TAGS}"
+            plat_dir="$SRC/${plat_key}"
             if [ ! -d "$plat_dir" ]; then
-              echo "::error::No '${PLATFORM}-${ARCH}/' in fabric prebuilds at $SRC"
+              echo "::error::No '${plat_key}/' in fabric prebuilds at $SRC"
               ls -la "$SRC" 2>/dev/null || true
               exit 1
             fi
-            dest_plat="$dest_root/${PLATFORM}-${ARCH}"
+            dest_plat="$dest_root/${plat_key}"
             mkdir -p "$dest_plat"
             cp -r "$plat_dir/." "$dest_plat/"
             return

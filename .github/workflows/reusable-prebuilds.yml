@@ -296,6 +296,7 @@ jobs:
           prebuilds-root: ${{ runner.temp }}/fabric-prebuilds
           platform: ${{ matrix.platform }}
           arch: ${{ matrix.arch }}
+          tags: ${{ matrix.tags || '' }}
 
       - if: ${{ inputs.setup-rust-toolchain }}
         name: Setup Rust toolchain
