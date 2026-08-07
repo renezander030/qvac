@@ -55,6 +55,26 @@ runs:
           SEARCH="$SEARCH $SEARCH_DIRS"
         fi
 
+        # GNU find -path "*/node_modules/@qvac/fabric" misses Windows installs
+        # where npm (PowerShell) lays out node_modules\@qvac\fabric. Prefer direct
+        # checks, then locate @qvac dirs by name.
+        discover_fabric_packages() {
+          local search_root="$1"
+          [ -d "$search_root" ] || return 0
+
+          local direct="$search_root/node_modules/@qvac/fabric"
+          if [ -d "$direct" ]; then
+            echo "$direct"
+          fi
+
+          find "$search_root" -type d -name '@qvac' 2>/dev/null | while read -r scope_pkg; do
+            local candidate="$scope_pkg/fabric"
+            if [ -d "$candidate" ]; then
+              echo "$candidate"
+            fi
+          done
+        }
+
         overlay_tree() {
           local dest_root="$1"
           mkdir -p "$dest_root"
@@ -107,12 +127,17 @@ runs:
           done
         done < <(
           for search_root in $SEARCH; do
-            [ -d "$search_root" ] || continue
-            find "$search_root" -type d -path "*/node_modules/@qvac/fabric" 2>/dev/null || true
+            discover_fabric_packages "$search_root"
           done | awk '!seen[$0]++'
         )
 
         if [ "$found_pkg" != "true" ]; then
           echo "::error::No installed @qvac/fabric found under $SEARCH"
+          for search_root in $SEARCH; do
+            if [ -d "$search_root/node_modules/@qvac" ]; then
+              echo "Contents of $search_root/node_modules/@qvac:"
+              ls -la "$search_root/node_modules/@qvac" 2>/dev/null || true
+            fi
+          done
           exit 1
         fi

@@ -124,6 +124,7 @@ jobs:
 
       - name: Install npm dependencies
         working-directory: ${{ env.WORKDIR }}
+        shell: bash
         run: npm install --ignore-scripts
 
       - name: Download fabric-prebuilds for overlay
