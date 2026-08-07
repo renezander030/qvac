@@ -1,8 +1,9 @@
 {
   "default-registry": {
     "kind": "git",
-    "baseline": "8d7bbc5e3dc27ddcac7c5f881676f83ca7320f71",
-    "repository": "https://github.com/tetherto/qvac-registry-vcpkg.git"
+    "baseline": "c882569965080c060fc90b1593d5fe540f7d6b0b",
+    "repository": "https://github.com/tetherto/qvac-registry-vcpkg.git",
+    "reference": "QVAC-20983/ggml-backward-vocoder"
   },
   "registries": [
     {
