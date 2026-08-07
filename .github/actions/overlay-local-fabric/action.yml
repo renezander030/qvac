@@ -55,9 +55,8 @@ runs:
           SEARCH="$SEARCH $SEARCH_DIRS"
         fi
 
-        # GNU find -path "*/node_modules/@qvac/fabric" misses Windows installs
-        # where npm (PowerShell) lays out node_modules\@qvac\fabric. Prefer direct
-        # checks, then locate @qvac dirs by name.
+        # Check each explicit search root directly. Recursive `find` is avoided:
+        # Git Bash can resolve it to Windows find.exe instead of GNU find.
         discover_fabric_packages() {
           local search_root="$1"
           [ -d "$search_root" ] || return 0
@@ -66,13 +65,6 @@ runs:
           if [ -d "$direct" ]; then
             echo "$direct"
           fi
-
-          find "$search_root" -type d -name '@qvac' 2>/dev/null | while read -r scope_pkg; do
-            local candidate="$scope_pkg/fabric"
-            if [ -d "$candidate" ]; then
-              echo "$candidate"
-            fi
-          done
         }
 
         overlay_tree() {
@@ -122,9 +114,23 @@ runs:
           dest="$pkg/prebuilds"
           echo "Overlaid PR fabric prebuilds into $dest"
           overlay_tree "$dest"
-          find "$dest" -depth -name 'tetherto_*' | while read -r f; do
-            mv "$f" "$(dirname "$f")/$(basename "$f" | sed 's/^tetherto_/qvac_/')"
-          done
+          node -e '
+            const fs = require("node:fs")
+            const path = require("node:path")
+
+            function renameArtifacts(root) {
+              for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+                const source = path.join(root, entry.name)
+                if (entry.isDirectory()) renameArtifacts(source)
+                if (!entry.name.startsWith("tetherto_")) continue
+
+                const target = path.join(root, `qvac_${entry.name.slice(9)}`)
+                fs.renameSync(source, target)
+              }
+            }
+
+            renameArtifacts(process.argv[1])
+          ' "$dest"
         done < <(
           for search_root in $SEARCH; do
             discover_fabric_packages "$search_root"
